@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#7cc8f0"/>
+      <stop offset="1" stop-color="#c5f0ff"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#sky)"/>
+  <circle cx="400" cy="110" r="46" fill="#ffe066"/>
+  <!-- spodní tráva -->
+  <g transform="translate(256 250)">
+    <path d="M0 0 150 75 0 150 -150 75Z" fill="#5cc43c"/>
+    <path d="M-150 75 0 150 0 260 -150 185Z" fill="#9b6b3d"/>
+    <path d="M150 75 0 150 0 260 150 185Z" fill="#7d5530"/>
+    <path d="M-150 75 0 150 0 172 -150 97Z" fill="#4caf32"/>
+    <path d="M150 75 0 150 0 172 150 97Z" fill="#3f9628"/>
+  </g>
+  <!-- dřevěná kostka -->
+  <g transform="translate(250 172)">
+    <path d="M0 0 90 45 0 90 -90 45Z" fill="#e0a868"/>
+    <path d="M-90 45 0 90 0 190 -90 145Z" fill="#c98a4b"/>
+    <path d="M90 45 0 90 0 190 90 145Z" fill="#a8703a"/>
+    <path d="M-90 78 0 123M-90 111 0 156M90 78 0 123M90 111 0 156" stroke="#6b4423" stroke-width="6" opacity=".55"/>
+  </g>
+  <!-- červená kostička -->
+  <g transform="translate(362 290) scale(.42)">
+    <path d="M0 0 90 45 0 90 -90 45Z" fill="#ff6b6b"/>
+    <path d="M-90 45 0 90 0 190 -90 145Z" fill="#e53935"/>
+    <path d="M90 45 0 90 0 190 90 145Z" fill="#b71c1c"/>
+  </g>
+</svg>

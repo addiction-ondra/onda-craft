@@ -1,0 +1,151 @@
+import type { BlockType } from './blocks';
+import { bridgeProgress, hasBridge, keyOf, WORLD_H, type Vec3, type World } from './world';
+
+export type MissionId = 'wood5' | 'findRed' | 'bridge';
+
+export interface MissionState {
+  id: MissionId;
+  progress: number;
+  target: number;
+  /** Pozice cílů (mise „Najdi červené kostky“). */
+  targets: Vec3[];
+  /** Kolikrát dítě použilo jiný materiál – jen pro dávkování nápovědy. */
+  otherTries: number;
+  done: boolean;
+}
+
+export type GameEvent =
+  | { kind: 'placed'; block: BlockType; pos: Vec3 }
+  | { kind: 'removed'; block: BlockType; pos: Vec3 }
+  | { kind: 'collected'; pos: Vec3 };
+
+/**
+ * Zpětná vazba pro controller:
+ * - progress: posun vpřed (pochvala, zvuk)
+ * - gentle-hint: dítě dělá něco jiného – jemně navést (nikdy netrestat)
+ * - complete: mise splněna
+ */
+export type MissionFeedback = 'none' | 'progress' | 'gentle-hint' | 'complete';
+
+export interface MissionResult {
+  state: MissionState;
+  feedback: MissionFeedback;
+}
+
+export interface MissionDef {
+  id: MissionId;
+  /** Číslo mise v plánu (1–8). */
+  number: number;
+  target: number;
+  /** Materiál, který mise doporučuje (předvybere se nápověda v paletě). */
+  suggestedBlock?: BlockType;
+}
+
+export const MISSIONS: MissionDef[] = [
+  { id: 'wood5', number: 1, target: 5, suggestedBlock: 'wood' },
+  { id: 'findRed', number: 2, target: 3 },
+  { id: 'bridge', number: 3, target: 2, suggestedBlock: 'wood' },
+];
+
+export const getMission = (id: MissionId): MissionDef => {
+  const m = MISSIONS.find((d) => d.id === id);
+  if (!m) throw new Error(`Unknown mission ${id}`);
+  return m;
+};
+
+/** Místa, kam se mohou schovat červené kostky (x, z). Rozložená po celém světě. */
+export const RED_HIDING_SPOTS: Array<[number, number]> = [
+  [1, 5],
+  [14, 4],
+  [10, 12], // na střeše domečku
+  [4, 14],
+  [13, 10],
+  [6, 12],
+  [11, 1],
+  [3, 1],
+];
+
+const shuffle = <T>(arr: T[], rng: () => number): T[] => {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+};
+
+/**
+ * Spustí misi. Může upravit svět (např. schová červené kostky).
+ * `rng` je injektovaný kvůli testům.
+ */
+export function startMission(id: MissionId, world: World, rng: () => number = Math.random): MissionState {
+  const def = getMission(id);
+  const state: MissionState = { id, progress: 0, target: def.target, targets: [], otherTries: 0, done: false };
+
+  if (id === 'findRed') {
+    for (const [x, z] of shuffle(RED_HIDING_SPOTS, rng)) {
+      if (state.targets.length >= def.target) break;
+      const y = world.topY(x, z);
+      if (y < 1 || y >= WORLD_H) continue;
+      const p = { x, y, z };
+      world.setRaw(p, 'red');
+      state.targets.push(p);
+    }
+    state.target = state.targets.length;
+  }
+
+  if (id === 'bridge') {
+    state.progress = Math.min(bridgeProgress(world).covered, def.target - 1);
+  }
+
+  return state;
+}
+
+/** Po načtení uložené hry: vrátí do světa chybějící cílové kostky. */
+export function restoreMission(state: MissionState, world: World): void {
+  if (state.id === 'findRed') {
+    for (const p of state.targets) if (!world.has(p)) world.setRaw(p, 'red');
+  }
+}
+
+export const isMissionTarget = (state: MissionState | null, pos: Vec3): boolean =>
+  !!state && !state.done && state.targets.some((t) => keyOf(t) === keyOf(pos));
+
+/** Čistý reducer misí. */
+export function reduceMission(state: MissionState, event: GameEvent, world: World): MissionResult {
+  if (state.done) return { state, feedback: 'none' };
+
+  switch (state.id) {
+    case 'wood5': {
+      if (event.kind !== 'placed') return { state, feedback: 'none' };
+      if (event.block !== 'wood') {
+        return { state: { ...state, otherTries: state.otherTries + 1 }, feedback: 'gentle-hint' };
+      }
+      const progress = state.progress + 1;
+      const done = progress >= state.target;
+      return { state: { ...state, progress, done }, feedback: done ? 'complete' : 'progress' };
+    }
+
+    case 'findRed': {
+      if (event.kind !== 'collected') return { state, feedback: 'none' };
+      const k = keyOf(event.pos);
+      if (!state.targets.some((t) => keyOf(t) === k)) return { state, feedback: 'none' };
+      const targets = state.targets.filter((t) => keyOf(t) !== k);
+      const progress = state.progress + 1;
+      const done = progress >= state.target;
+      return { state: { ...state, targets, progress, done }, feedback: done ? 'complete' : 'progress' };
+    }
+
+    case 'bridge': {
+      if (event.kind === 'collected') return { state, feedback: 'none' };
+      if (hasBridge(world)) {
+        return { state: { ...state, progress: state.target, done: true }, feedback: 'complete' };
+      }
+      const covered = bridgeProgress(world).covered;
+      // Odebrání kostky nikdy nesnižuje viditelný pokrok – žádný „trest“.
+      const progress = Math.max(state.progress, covered);
+      const feedback: MissionFeedback = progress > state.progress ? 'progress' : 'none';
+      return { state: { ...state, progress }, feedback };
+    }
+  }
+}

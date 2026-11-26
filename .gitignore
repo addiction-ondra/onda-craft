@@ -4,3 +4,5 @@ dev-dist
 *.log
 test-results
 .DS_Store
+onda-craft.zip
+onda-craft.bundle

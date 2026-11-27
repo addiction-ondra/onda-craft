@@ -364,3 +364,13 @@ export function adjacentQuestionBox(w: World, p: Vec3): Vec3 | null {
   }
   return null;
 }
+
+/** „Prázdná louka“: smaže všechno postavené, zůstane jen země (tráva, písek, řeka). */
+export function clearToGround(w: World): void {
+  const above: Vec3[] = [];
+  for (const [k] of w.entries()) {
+    const p = parseKey(k);
+    if (p.y >= 1) above.push(p);
+  }
+  for (const p of above) w.deleteRaw(p);
+}

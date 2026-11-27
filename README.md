@@ -11,6 +11,18 @@ ovečkou a kuřátkem. Ovládání dotykem, minimum textu, české hlasové poky
 
 Architektura a roadmapa: [PLAN.md](PLAN.md) · pravidla vývoje: [CLAUDE.md](CLAUDE.md)
 
+## Co umí verze 0.4
+
+- **Tři režimy vpravo:**
+  - 🚶 **Panáček** (výchozí): dole si vybere Ondru nebo Lauriskou a ťukáním chodí po světě.
+  - 🔨 **Kladivo**: stavění z kostek (paleta, kostka a guma vlevo).
+  - 🏰 **Stavitel**: vybere hrad, domeček nebo farmu s ohradou; svítící kostky ukážou,
+    kam stavět (po patrech zespodu), materiál se dá sám. Hotovou stavbou pak může projít.
+- **Prázdná louka:** smaže všechno postavené, zůstane tráva, písek a řeka. V menu Stavitele
+  (s velkým potvrzením ✔/✖) i v rodičovské zóně.
+- **Klíč k pokladu:** za splnění všech 5 úkolů. Ukládá se nahoru do lišty; v dalších
+  světech bude otvírat poklad.
+
 ## Co umí verze 0.3
 
 - **Mise 4 – Nakrm zvířátka:** nad zvířátkem je bublina s jídlem, které má rádo.
@@ -52,7 +64,8 @@ Architektura a roadmapa: [PLAN.md](PLAN.md) · pravidla vývoje: [CLAUDE.md](CLA
 
 ## Jak se hraje
 
-1. Ťukni na velké zelené ▶.
+1. Ťukni na velké zelené ▶. Dole vyber kamaráda a ťukej, kam má jít.
+   Stavět z kostek = kladivo vpravo, šablony staveb = hrad vpravo.
 2. Dole vyber kostku, ťukni na zem nebo na jinou kostku – kostka přibude.
 3. Gumou (růžová ikona vlevo) kostky schováš. Zem zůstane vždy.
 4. Vlajka vlevo nahoře = úkoly. Hvězdička = splněný úkol.

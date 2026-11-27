@@ -16,6 +16,10 @@ import {
   IconRotateLeft,
   IconRotateRight,
   IconSpeaker,
+  IconWalker,
+  IconHammer,
+  IconCastle,
+  IconKey,
 } from './Icons';
 import { MissionIcon, ProgressSlots } from './MissionIcon';
 
@@ -28,6 +32,7 @@ export function Hud({ game, ui }: Props) {
   return (
     <>
       <TopBar game={game} ui={ui} />
+      {ui.playMode === 'build' && (
       <div className="side left">
         <button
           className={`big-btn mode ${ui.mode === 'build' ? 'active' : ''}`}
@@ -46,7 +51,34 @@ export function Hud({ game, ui }: Props) {
           <IconErase />
         </button>
       </div>
+      )}
       <div className="side right">
+        <div className="mode-col" role="toolbar" aria-label="Režim">
+          <button
+            className={`big-btn modebtn ${ui.playMode === 'walk' ? 'active' : ''}`}
+            aria-label={CS.ui.walk}
+            aria-pressed={ui.playMode === 'walk'}
+            onClick={() => game.setPlayMode('walk')}
+          >
+            <IconWalker />
+          </button>
+          <button
+            className={`big-btn modebtn ${ui.playMode === 'build' ? 'active' : ''}`}
+            aria-label={CS.ui.build}
+            aria-pressed={ui.playMode === 'build'}
+            onClick={() => game.setPlayMode('build')}
+          >
+            <IconHammer />
+          </button>
+          <button
+            className={`big-btn modebtn ${ui.playMode === 'architect' ? 'active' : ''}`}
+            aria-label={CS.ui.builder}
+            aria-pressed={ui.playMode === 'architect'}
+            onClick={() => game.setPlayMode('architect')}
+          >
+            <IconCastle />
+          </button>
+        </div>
         <div className="cam-row">
           <button className="big-btn cam" aria-label="Otočit doleva" onClick={() => game.rotate(-1)}>
             <IconRotateLeft />
@@ -64,7 +96,9 @@ export function Hud({ game, ui }: Props) {
           </button>
         </div>
       </div>
-      <Palette game={game} ui={ui} />
+      {ui.playMode === 'build' && <Palette game={game} ui={ui} />}
+      {ui.playMode === 'walk' && <FriendBar game={game} ui={ui} />}
+      {ui.playMode === 'architect' && <TemplateBar game={game} ui={ui} />}
     </>
   );
 }
@@ -100,22 +134,15 @@ function TopBar({ game, ui }: Props) {
         </button>
       )}
       <div className="top-right">
-        <div className="char-btns">
-          {CHARACTER_IDS.map((id) => (
-            <button
-              key={id}
-              className={`char-btn ${ui.selectedCharacter === id ? 'selected' : ''} ${ui.nudgeCharacters ? 'nudge' : ''}`}
-              aria-label={CS.voice.characters[id].name}
-              aria-pressed={ui.selectedCharacter === id}
-              onClick={() => game.selectCharacter(ui.selectedCharacter === id ? null : id)}
-            >
-              <span className="char-face" aria-hidden>
-                {id === 'ondra' ? '👦' : '👧'}
+        {ui.keys.length > 0 && (
+          <button className="keys-btn" aria-label={CS.ui.keys} onClick={() => game.tapKeys()}>
+            {ui.keys.map((k) => (
+              <span key={k} className="key-slot">
+                <IconKey />
               </span>
-              <span className="char-name">{CS.voice.characters[id].name}</span>
-            </button>
-          ))}
-        </div>
+            ))}
+          </button>
+        )}
         <button className="parent-btn" aria-label={CS.ui.parents} onClick={() => game.openParents()}>
           <IconGear />
         </button>
@@ -123,6 +150,49 @@ function TopBar({ game, ui }: Props) {
     </div>
   );
 }
+
+/** Režim chození: velké obličeje kamarádů dole – vybrat, s kým chodit. */
+function FriendBar({ game, ui }: Props) {
+  return (
+    <div className="palette friends" role="toolbar" aria-label="Kamarádi">
+      {CHARACTER_IDS.map((id) => (
+        <button
+          key={id}
+          className={`char-btn big ${ui.selectedCharacter === id ? 'selected' : ''} ${ui.nudgeCharacters && !ui.selectedCharacter ? 'nudge' : ''}`}
+          aria-label={CS.voice.characters[id].name}
+          aria-pressed={ui.selectedCharacter === id}
+          onClick={() => game.selectCharacter(ui.selectedCharacter === id ? null : id)}
+        >
+          <span className="char-face" aria-hidden>
+            {id === 'ondra' ? '👦' : '👧'}
+          </span>
+          <span className="char-name">{CS.voice.characters[id].name}</span>
+        </button>
+      ))}
+    </div>
+  );
+}
+
+/** Režim Stavitel: co stavím a kolik už je hotovo (bez časomíry). */
+function TemplateBar({ game, ui }: Props) {
+  const t = ui.template;
+  return (
+    <div className="palette template-bar">
+      <button className="big-btn" aria-label={CS.ui.builder} onClick={() => game.openArchitect()}>
+        <span className="tpl-emoji" aria-hidden>
+          {t ? TEMPLATE_EMOJI[t.id] : '🏗️'}
+        </span>
+      </button>
+      {t && (
+        <div className="tpl-progress" aria-label={`${t.filled} z ${t.total}`}>
+          <div className="tpl-fill" style={{ width: `${(100 * t.filled) / t.total}%` }} />
+        </div>
+      )}
+    </div>
+  );
+}
+
+export const TEMPLATE_EMOJI = { castle: '🏰', house: '🏠', farm: '🐄' } as const;
 
 function Palette({ game, ui }: Props) {
   return (

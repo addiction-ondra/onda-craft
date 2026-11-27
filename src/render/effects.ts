@@ -67,10 +67,22 @@ export class Effects {
   }
 
   /** Průhledné „duchové“ kostky ukazují, kam stavět. */
-  setGhosts(list: Vec3[]): void {
+  private ghostMats = new Map<string, THREE.MeshBasicMaterial>();
+  private ghostMatFor(color?: string): THREE.MeshBasicMaterial {
+    if (!color) return this.ghostMat;
+    let m = this.ghostMats.get(color);
+    if (!m) {
+      m = new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.5, depthWrite: false });
+      this.ghostMats.set(color, m);
+    }
+    return m;
+  }
+
+  /** `colors[i]` = barva materiálu, který na místo patří (jinak žlutá). */
+  setGhosts(list: Vec3[], colors?: string[]): void {
     this.ghosts.clear();
     for (const p of list) {
-      const m = new THREE.Mesh(this.popGeo, this.ghostMat);
+      const m = new THREE.Mesh(this.popGeo, this.ghostMatFor(colors?.[list.indexOf(p)]));
       m.position.set(p.x + 0.5, p.y + 0.5, p.z + 0.5);
       m.userData.ghostPos = { x: p.x, y: p.y, z: p.z };
       const edges = new THREE.LineSegments(this.ghostEdges, this.ghostLineMat);
@@ -128,6 +140,7 @@ export class Effects {
     }
     const wave = 0.5 + 0.5 * Math.sin(this.time * 5);
     this.ghostMat.opacity = 0.35 + 0.35 * wave;
+    for (const m of this.ghostMats.values()) m.opacity = 0.4 + 0.35 * wave;
     this.ghostLineMat.opacity = 0.6 + 0.4 * wave;
     for (const g of this.ghosts.children) g.scale.setScalar(0.92 + 0.08 * wave);
     if (this.walkTarget.visible) this.walkTarget.scale.setScalar(0.85 + 0.2 * wave);

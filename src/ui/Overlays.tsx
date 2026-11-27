@@ -1,9 +1,10 @@
 import { useMemo } from 'react';
 import type { GameController, UiSnapshot } from '../controller/GameController';
 import { MISSIONS, type MissionId } from '../game/missions';
+import { TEMPLATE_IDS, type TemplateId } from '../game/templates';
 import { CS } from '../i18n/cs';
 import { iconFor } from './blockIcons';
-import { IconBuild, IconClose, IconPlay, IconSpeaker, IconStar } from './Icons';
+import { IconBuild, IconClose, IconKey, IconPlay, IconSpeaker, IconStar } from './Icons';
 import { MissionDemo } from './MissionDemo';
 import { MissionIcon } from './MissionIcon';
 
@@ -88,7 +89,7 @@ export function MissionIntro({ game, id }: { game: GameController; id: MissionId
 
 const CONFETTI_COLORS = ['#ff6b6b', '#ffd43b', '#69db7c', '#4dabf7', '#da77f2', '#ffa94d'];
 
-export function Success({ game, ui, id }: Props & { id: MissionId }) {
+export function Success({ game, ui, id, keyAwarded }: Props & { id: MissionId; keyAwarded?: boolean }) {
   const pieces = useMemo(
     () =>
       Array.from({ length: 36 }, (_, i) => ({
@@ -124,6 +125,11 @@ export function Success({ game, ui, id }: Props & { id: MissionId }) {
         <div className="success-mission">
           <MissionIcon id={id} />
         </div>
+        {keyAwarded && (
+          <div className="key-reward" aria-label={CS.ui.keys}>
+            <IconKey />
+          </div>
+        )}
         <div className="success-actions">
           <button className="go-btn secondary" aria-label={CS.ui.continue} onClick={() => game.closeOverlay()}>
             <IconBuild />
@@ -151,6 +157,84 @@ export function BreakOverlay({ game }: { game: GameController }) {
         <button className="go-btn" onClick={() => game.closeOverlay()}>
           {CS.ui.breakOk}
         </button>
+      </div>
+    </div>
+  );
+}
+
+const TPL_EMOJI: Record<TemplateId, string> = { castle: '🏰', house: '🏠', farm: '🐄' };
+
+/** Menu Stavitele: 3 šablony + prázdná louka. */
+export function ArchitectMenu({ game, ui, noRoom }: Props & { noRoom?: TemplateId }) {
+  return (
+    <div className="overlay dim" onClick={() => game.closeOverlay()}>
+      <div className="card menu-card" onClick={(e) => e.stopPropagation()}>
+        <button className="round-btn ghost close" aria-label={CS.ui.close} onClick={() => game.closeOverlay()}>
+          <IconClose />
+        </button>
+        <div className="menu-grid">
+          {TEMPLATE_IDS.map((id) => (
+            <button
+              key={id}
+              className={`menu-item tpl ${ui.template?.id === id ? 'current' : ''} ${noRoom === id ? 'no-room' : ''}`}
+              aria-label={CS.builder.names[id]}
+              onClick={() => game.chooseTemplate(id)}
+            >
+              <span className="tpl-big" aria-hidden>
+                {TPL_EMOJI[id]}
+              </span>
+              <span className="tpl-name">{CS.builder.names[id]}</span>
+            </button>
+          ))}
+          <button className={`menu-item meadow ${noRoom ? 'pulse-item' : ''}`} aria-label={CS.builder.meadow} onClick={() => game.askMeadow()}>
+            <span className="tpl-big" aria-hidden>
+              🌱
+            </span>
+            <span className="tpl-name">{CS.builder.meadow}</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** Velké potvrzení pro dítě: ✔ uklidit / ✖ nechat. */
+export function MeadowConfirm({ game }: { game: GameController }) {
+  return (
+    <div className="overlay dim">
+      <div className="card break-card">
+        <div className="break-pic" aria-hidden>
+          🧹🌱
+        </div>
+        <div className="success-actions">
+          <button className="go-btn secondary" aria-label={CS.ui.no} onClick={() => game.openArchitect()}>
+            <IconClose />
+          </button>
+          <button className="go-btn" aria-label={CS.ui.yes} onClick={() => game.clearToMeadow()}>
+            ✔
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** Oslava hotové stavby ze šablony. */
+export function TemplateDone({ game, template }: { game: GameController; template: TemplateId }) {
+  return (
+    <div className="overlay dim success">
+      <div className="card success-card">
+        <div className="success-star">
+          <IconStar />
+        </div>
+        <div className="tpl-big done" aria-hidden>
+          {TPL_EMOJI[template]}
+        </div>
+        <div className="success-actions">
+          <button className="go-btn" aria-label={CS.ui.continue} onClick={() => game.closeOverlay()}>
+            <IconPlay />
+          </button>
+        </div>
       </div>
     </div>
   );

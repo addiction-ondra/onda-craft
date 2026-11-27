@@ -44,6 +44,10 @@ Před commitem vždy: `npm run lint && npm test && npm run build`.
 - Minimum textu; každý pokyn musí jít i hlasem a ikonou.
 - Rodičovské funkce jen za rodičovskou bránou (`ParentGate`).
 - Destruktivní akce (reset světa) jen v rodičovské zóně a s potvrzením.
+  Výjimka (přání rodiče): „Prázdná louka“ je i v menu Stavitele – s velkým obrázkovým
+  potvrzením ✔/✖ a hlasem, protože ve výchozím světě není na šablony místo.
+- Režimy vpravo: panáček (chození, výchozí po spuštění), kladivo (stavění z kostek),
+  hrad (Stavitel). Mise přepnou na kladivo samy.
 - Respektovat `safe-area-inset-*`, zakázat zoom stránky, long-press menu a výběr textu.
 - Nová mise musí mít: úvodní ukázku, hlasový úvod, průběh, nápovědu, oslavu.
 
@@ -61,6 +65,8 @@ Před commitem vždy: `npm run lint && npm test && npm run build`.
   kolem malého prostoru ho schovají; ověř smoke testem.
 - Svítící místa (ghosty z `effects.setGhosts`) jsou klikací: ťuknutí položí kostku přímo do nich
   (i „ve vzduchu“). Když je cíl mise schovaný za hradem, natoč na něj kameru (`view.focusOn`).
+- Nová šablona Stavitele: `game/templates.ts` (max ~30 kostek, `entrance` musí vést na pevnou zem),
+  název a hlas do `cs.ts` (`builder`), emoji do `ui/Overlays.tsx` a `ui/Hud.tsx`.
 - Nová úloha do beden s otazníkem: rozšířit `quiz.ts` (data), `cs.ts` (hlas) a `ui/QuizOverlay.tsx`.
 - Výkon: kostky jen přes `InstancedMesh`, žádné stíny, `pixelRatio ≤ 2`, render
   jen když je něco „dirty“ nebo běží animace.

@@ -126,3 +126,39 @@ export const IconSearch = (p: P) => (
     <path d="M28 28l12 12" strokeWidth={6} />
   </svg>
 );
+
+/** Panáček – režim chození. */
+export const IconWalker = (p: P) => (
+  <svg {...base(p)} strokeWidth={3.5}>
+    <circle cx="26" cy="9" r="5" fill="#ffd8a8" stroke="#8a5a2b" />
+    <path d="M24 16l-4 13 6 4v11" stroke="#1971c2" strokeWidth={5} />
+    <path d="M20 29l-6 13" stroke="#1971c2" strokeWidth={5} />
+    <path d="M24 18l10 6M23 19l-9 5" stroke="#f08c00" strokeWidth={4} />
+  </svg>
+);
+
+/** Kladivo – stavění z kostek. */
+export const IconHammer = (p: P) => (
+  <svg {...base(p)} strokeWidth={3}>
+    <path d="M22 22 8 40a3.5 3.5 0 0 0 5 5l18-14" fill="#c98a4b" stroke="#6b4423" />
+    <path d="M18 14l10-8 16 14-6 6-6-4-6 6-8-6Z" fill="#adb5bd" stroke="#495057" />
+  </svg>
+);
+
+/** Hrad – režim Stavitel. */
+export const IconCastle = (p: P) => (
+  <svg {...base(p)} strokeWidth={2.5}>
+    <path d="M6 44V16h6v5h5v-5h6v5h4v-5h6v5h5v-5h4v28Z" fill="#ced4da" stroke="#495057" />
+    <path d="M20 44V33a4 4 0 0 1 8 0v11" fill="#8a5a2b" stroke="#495057" />
+    <path d="M24 16V5l8 3-8 3" fill="#ff6b6b" stroke="#c92a2a" />
+  </svg>
+);
+
+/** Klíč k pokladu. */
+export const IconKey = (p: P) => (
+  <svg {...base(p)} strokeWidth={3}>
+    <circle cx="15" cy="24" r="9" fill="#ffd43b" stroke="#e67700" />
+    <circle cx="15" cy="24" r="3.5" fill="#fff" stroke="#e67700" />
+    <path d="M24 24h20M38 24v7M32 24v5" stroke="#e67700" strokeWidth={5} />
+  </svg>
+);

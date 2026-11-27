@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { GameController } from './controller/GameController';
 import { Hud } from './ui/Hud';
-import { BreakOverlay, MissionIntro, MissionMenu, StartScreen, Success } from './ui/Overlays';
+import { ArchitectMenu, BreakOverlay, MeadowConfirm, MissionIntro, MissionMenu, StartScreen, Success, TemplateDone } from './ui/Overlays';
 import { ParentZone } from './ui/ParentZone';
 import { QuizOverlay } from './ui/QuizOverlay';
 
@@ -22,7 +22,10 @@ export default function App() {
       {ui.started && <Hud game={game} ui={ui} />}
       {o?.kind === 'missions' && <MissionMenu game={game} ui={ui} />}
       {o?.kind === 'intro' && <MissionIntro game={game} id={o.mission} />}
-      {o?.kind === 'success' && <Success game={game} ui={ui} id={o.mission} />}
+      {o?.kind === 'success' && <Success game={game} ui={ui} id={o.mission} keyAwarded={o.keyAwarded} />}
+      {o?.kind === 'architect' && <ArchitectMenu game={game} ui={ui} noRoom={o.noRoom} />}
+      {o?.kind === 'meadowConfirm' && <MeadowConfirm game={game} />}
+      {o?.kind === 'templateDone' && <TemplateDone game={game} template={o.template} />}
       {o?.kind === 'parents' && <ParentZone game={game} ui={ui} />}
       {o?.kind === 'break' && <BreakOverlay game={game} />}
       {o?.kind === 'quiz' && <QuizOverlay game={game} quiz={o.quiz} wrong={o.wrong} solved={o.solved} help={o.help} />}

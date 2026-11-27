@@ -101,7 +101,7 @@ function Choice<T extends string | number>({
 
 function ParentSettings({ game, ui }: Props) {
   const s = ui.settings;
-  const [confirm, setConfirm] = useState<null | 'world' | 'missions'>(null);
+  const [confirm, setConfirm] = useState<null | 'world' | 'missions' | 'meadow'>(null);
   const up = (p: Partial<Settings>) => game.updateSettings(p);
   const version = useMemo(() => __APP_VERSION__, []);
 
@@ -154,11 +154,12 @@ function ParentSettings({ game, ui }: Props) {
       <div className="danger">
         {confirm ? (
           <div className="confirm">
-            <p>{confirm === 'world' ? CS.ui.confirmReset : CS.ui.confirmMissions}</p>
+            <p>{confirm === 'world' ? CS.ui.confirmReset : confirm === 'meadow' ? CS.ui.confirmMeadow : CS.ui.confirmMissions}</p>
             <button
               className="text-btn danger-btn"
               onClick={() => {
                 if (confirm === 'world') game.resetWorld();
+                else if (confirm === 'meadow') game.clearToMeadow();
                 else game.resetMissions();
                 setConfirm(null);
               }}
@@ -173,6 +174,9 @@ function ParentSettings({ game, ui }: Props) {
           <>
             <button className="text-btn" onClick={() => setConfirm('missions')}>
               {CS.ui.resetMissions}
+            </button>
+            <button className="text-btn danger-btn" onClick={() => setConfirm('meadow')}>
+              {CS.ui.meadowParent}
             </button>
             <button className="text-btn danger-btn" onClick={() => setConfirm('world')}>
               {CS.ui.resetWorld}

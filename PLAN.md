@@ -38,6 +38,8 @@ src/
 │   ├── missions.ts       definice a vyhodnocování misí (reducer styl)
 │   ├── pathfinding.ts    hledání cesty (BFS, schod max. 1 kostka, výška těla: děti 2, pejsek 1)
 │   ├── quiz.ts           úkoly z beden s otazníkem (počítání, barvy, tvary, písmena)
+│   ├── templates.ts      šablony Stavitele (hrad, domeček, farma), hledání volného místa
+│   ├── rewards.ts        klíče k pokladu (1 za svět se všemi úkoly)
 │   ├── characters.ts     postavičky Ondra a Lauriska, výchozí pozice
 │   ├── settings.ts       rodičovské nastavení + výchozí hodnoty
 │   └── storage.ts        serializace / LocalStorage s verzí formátu
@@ -127,6 +129,9 @@ se plní), **nápovědu** (po nečinnosti nebo při jiném materiálu – nikdy 
 - **v0.2** – hrad, postavičky Ondra a Lauriska s chozením, buldoček Frený. ✅
 - **v0.3** – mise 4 (krmení zvířátek), mise 5 (domeček pro Freného), bedny s otazníkem s úkoly
   (počítání 1–5, barvy, tvary, písmena), ťuknutí na svítící místo položí kostku přímo tam. ✅
-- **v0.4** – mise 6 (čísla: postav věž z N kostek, hlasové počítání), mise 7 (tvary: obtáhni čtverec/obdélník/trojúhelník na zemi).
-- **v0.5** – mise 8 (písmena z kostek, začáteční hlásky), více světů / slotů pro sourozence.
+- **v0.4** – režimy panáček / kladivo / Stavitel (šablony hrad, domeček, farma), prázdná louka,
+  klíč k pokladu za všechny úkoly. ✅
+- **v0.5** – další světy (výběr ostrova) a poklad, který se otevírá klíči.
+- **v0.6** – mise 6 (čísla: postav věž z N kostek, hlasové počítání), mise 7 (tvary: obtáhni čtverec/obdélník/trojúhelník na zemi).
+- **v0.7** – mise 8 (písmena z kostek, začáteční hlásky), více světů / slotů pro sourozence.
 - Průběžně: přístupnost (větší kontrast), výkon na starších iPadech, nahrané lidské hlasy jako fallback.

@@ -136,10 +136,18 @@ async function ipadFlow() {
   await page.getByRole('button', { name: 'Hrát' }).click();
   await sleep(500);
   ok((await snap(page)).started, 'hra se spustí tlačítkem Hrát');
+  let s0;
   ok((await page.evaluate(() => window.__onda.controller.sfx.ctx?.state)) === 'running', 'zvuk (Web Audio) se po ťuknutí na Hrát zapne');
   await page.screenshot({ path: `${OUT}/02-world.png` });
 
   // --- výběr materiálu a pokládání
+  s0 = await snap(page);
+  ok(s0.playMode === 'walk' && (await page.getByRole('button', { name: 'Ondra' }).isVisible()), 'výchozí režim je panáček: dole se vybírá kamarád');
+  const sizeBefore = await page.evaluate(() => window.__onda.world().size);
+  await tapCell(page, { x: 3, y: 0, z: 4 });
+  ok((await page.evaluate(() => window.__onda.world().size)) === sizeBefore && (await snap(page)).nudgeCharacters, 'v režimu chození ťuknutí nic nepostaví, jen poradí vybrat kamaráda');
+  await page.getByRole('button', { name: 'Stavění z kostek' }).click();
+  ok((await snap(page)).playMode === 'build' && (await page.getByRole('button', { name: 'kámen', exact: true }).isVisible()), 'kladivo zapne stavění z kostek (paleta)');
   await page.getByRole('button', { name: 'kámen', exact: true }).click();
   ok((await snap(page)).material === 'stone', 'výběr materiálu (kámen)');
   const g = { x: 5, y: 0, z: 4 };
@@ -291,6 +299,11 @@ async function ipadFlow() {
   s = await snap(page);
   const dogCell = await page.evaluate(() => window.__onda.controller.animals.get('dog').standCell);
   ok(s.completed.includes('doghouse') && s.overlay?.kind === 'success', 'mise 5: domeček hotový, oslava');
+  ok(
+    s.overlay?.keyAwarded === true && s.keys.includes('island') && (await page.locator('.key-reward').isVisible()),
+    `za všechny úkoly klíč k pokladu (${JSON.stringify({ ov: s.overlay, keys: s.keys, vis: await page.locator('.key-reward').count() })})`,
+  );
+  await page.screenshot({ path: `${OUT}/18b-key-reward.png` });
   ok(dogCell.x === 3 && dogCell.y === 1 && dogCell.z === 11, `Frený vlezl do domečku (${JSON.stringify(dogCell)})`);
   await page.getByRole('button', { name: 'Stavět dál' }).click();
   await page.screenshot({ path: `${OUT}/18-doghouse-done.png` });
@@ -301,12 +314,14 @@ async function ipadFlow() {
   ok(await tapCreature(page, 'sheep'), 'ťuknutí na ovečku trefí zvířátko');
 
   // --- postavičky: Ondra dojde bránou na nádvoří hradu
+  await page.getByRole('button', { name: 'Chození' }).click();
+  ok(await page.locator('.keys-btn').isVisible(), 'klíč je nahoře v liště');
   await page.getByRole('button', { name: 'Ondra' }).click();
   ok((await snap(page)).selectedCharacter === 'ondra', 'postavička se vybere tlačítkem s obličejem');
   await page.screenshot({ path: `${OUT}/12-ondra-selected.png` });
   const court = { x: 11, y: 0, z: 11 };
   ok(await tapVisible(page, court), 'nádvoří hradu je vidět a dá se na něj ťuknout');
-  ok((await snap(page)).selectedCharacter === null, 'po zadání cíle se výběr zruší (další ťuknutí zase staví)');
+  ok((await snap(page)).selectedCharacter === 'ondra', 'v režimu chození zůstává postavička vybraná');
   ok((await blockAt(page, { x: 10, y: 1, z: 12 })) === null, 'ťuknutí s vybranou postavičkou nepostaví kostku');
   await page.waitForFunction(() => !window.__onda.controller.characters.get('ondra').walking, null, { timeout: 30000 });
   const ondra = await page.evaluate(() => window.__onda.controller.characters.get('ondra').standCell);
@@ -346,6 +361,7 @@ async function ipadFlow() {
   await page.waitForFunction(() => !!window.__onda);
   ok((await blockAt(page, { x: bx, y: 1, z: 7 })) === 'wood', 'svět se po obnovení stránky načte (most zůstal)');
   ok((await snap(page)).completed.length === 5, 'hvězdičky všech 5 misí zůstaly uložené');
+  ok((await snap(page)).keys.includes('island'), 'klíč k pokladu zůstal uložený');
   const ondraAfter = await page.evaluate(() => window.__onda.controller.characters.get('ondra').standCell);
   ok(ondraAfter.x === 11 && ondraAfter.z === 11, 'Ondra zůstal po obnovení stránky na hradě');
   await page.getByRole('button', { name: 'Hrát' }).click();
@@ -367,6 +383,44 @@ async function ipadFlow() {
   await page.getByRole('button', { name: 'Ano' }).click();
   ok((await blockAt(page, { x: bx, y: 1, z: 7 })) === null, 'reset světa (s potvrzením) funguje');
   await page.getByRole('button', { name: 'Zavřít' }).click();
+
+  // --- Stavitel: ve výchozím světě není na hrad místo → prázdná louka → postavit hrad
+  await page.getByRole('button', { name: 'Stavitel' }).click();
+  ok((await snap(page)).overlay?.kind === 'architect', 'ikona hradu otevře menu Stavitele');
+  await page.getByRole('button', { name: 'Hrad', exact: true }).click();
+  ok((await snap(page)).overlay?.noRoom === 'castle', 'když není místo, hra poradí prázdnou louku');
+  await page.screenshot({ path: `${OUT}/21-architect-menu.png` });
+  await page.getByRole('button', { name: 'Prázdná louka' }).click();
+  ok((await snap(page)).overlay?.kind === 'meadowConfirm', 'louka se nejdřív potvrzuje');
+  await page.getByRole('button', { name: 'Ano' }).click();
+  const above = await page.evaluate(() => [...window.__onda.world().entries()].filter(([k]) => Number(k.split(',')[1]) > 0).length);
+  ok(above === 0, 'prázdná louka: zůstala jen zem');
+  await page.getByRole('button', { name: 'Stavitel' }).click();
+  await page.getByRole('button', { name: 'Hrad', exact: true }).click();
+  s0 = await snap(page);
+  ok(s0.playMode === 'architect' && s0.template?.id === 'castle' && s0.template.filled === 0, 'šablona hradu začala');
+  await settle(page);
+  await page.screenshot({ path: `${OUT}/22-architect-ghosts.png` });
+  for (let guard = 0; guard < 80; guard++) {
+    const t = (await snap(page)).template;
+    if (!t) break;
+    const ghosts = await page.evaluate(() => window.__onda.view.effects.ghostObjects().map((o) => o.userData.ghostPos));
+    if (!ghosts.length) break;
+    let placed = false;
+    for (const g of ghosts.slice(0, 3)) {
+      if (await tapGhost(page, g)) {
+        placed = true;
+        break;
+      }
+    }
+    if (!placed) break;
+    if (t.filled === 12) await page.screenshot({ path: `${OUT}/23-architect-half.png` });
+  }
+  await page.waitForFunction(() => window.__onda.controller.getSnapshot().overlay?.kind === 'templateDone', null, { timeout: 5000 }).catch(() => {});
+  ok((await snap(page)).overlay?.kind === 'templateDone', 'hrad ze šablony je hotový');
+  await page.getByRole('button', { name: 'Stavět dál' }).click();
+  ok((await snap(page)).playMode === 'walk', 'po stavbě se přepne na chození (pošli kamaráda dovnitř)');
+  await page.screenshot({ path: `${OUT}/24-architect-done.png` });
 
   // --- PWA / offline
   const swReady = await page.evaluate(async () => {
@@ -398,6 +452,7 @@ async function iphoneFlow() {
   await page.waitForFunction(() => !!window.__onda);
   await page.screenshot({ path: `${OUT}/30-iphone-start.png` });
   await page.getByRole('button', { name: 'Hrát' }).tap();
+  await page.getByRole('button', { name: 'Stavění z kostek' }).tap();
   await sleep(500);
   await page.getByRole('button', { name: 'modrá' }).tap();
   await tapCell(page, { x: 6, y: 0, z: 5 }, 'top', true);

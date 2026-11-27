@@ -173,12 +173,12 @@ img {
   right: 0;
   display: flex;
   justify-content: center;
-  gap: 4px;
+  gap: 3px;
 }
 
 .mini-stars span {
-  width: 12px;
-  height: 12px;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
   background: #dee2e6;
 }
@@ -1559,4 +1559,147 @@ h3 {
 .quiz-stars {
   font-size: clamp(36px, 8vmin, 60px);
   animation: star-spin 0.9s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* ------------------------------------------------------------ režimy (panáček / kladivo / hrad) */
+
+.mode-col {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+  margin-bottom: calc(var(--gap) * 1.5);
+  align-items: flex-end;
+}
+
+.big-btn.modebtn.active {
+  background: #fff3bf;
+  outline: 5px solid #fab005;
+  transform: scale(1.06);
+}
+
+/* kamarádi dole v režimu chození */
+.palette.friends {
+  gap: calc(var(--gap) * 3);
+  padding: var(--gap) calc(var(--gap) * 3) calc(var(--gap) * 2);
+}
+
+.char-btn.big {
+  width: calc(var(--swatch) * 1.15);
+  height: calc(var(--swatch) * 1.15);
+}
+
+.char-btn.big .char-face {
+  font-size: calc(var(--swatch) * 0.72);
+}
+
+/* klíče k pokladu v liště nahoře */
+.top-right {
+  align-items: center;
+}
+
+.keys-btn {
+  display: flex;
+  gap: 4px;
+  padding: 6px 10px;
+  border-radius: 18px;
+  background: var(--panel);
+  box-shadow: 0 4px 0 rgba(0, 0, 0, 0.12);
+  min-height: 56px;
+  align-items: center;
+}
+
+.key-slot {
+  width: 44px;
+  height: 44px;
+  display: block;
+  animation: bob 2s ease-in-out infinite;
+}
+
+.key-reward {
+  width: clamp(80px, 16vmin, 130px);
+  height: clamp(80px, 16vmin, 130px);
+  animation: star-spin 1.2s cubic-bezier(0.34, 1.56, 0.64, 1) 0.4s both;
+  filter: drop-shadow(0 6px 10px rgba(230, 119, 0, 0.4));
+}
+
+/* Stavitel */
+.template-bar {
+  align-items: center;
+  gap: calc(var(--gap) * 2);
+  padding-right: calc(var(--gap) * 2.5);
+}
+
+.tpl-emoji {
+  font-size: calc(var(--btn) * 0.6);
+  line-height: 1;
+}
+
+.tpl-progress {
+  width: clamp(140px, 32vw, 340px);
+  height: 26px;
+  border-radius: 999px;
+  background: #e9ecef;
+  overflow: hidden;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.12);
+}
+
+.tpl-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #69db7c, #40c057);
+  border-radius: 999px;
+  transition: width 0.3s;
+}
+
+.menu-item.tpl,
+.menu-item.meadow {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10%;
+}
+
+.tpl-big {
+  font-size: clamp(48px, 11vmin, 90px);
+  line-height: 1;
+}
+
+.tpl-big.done {
+  font-size: clamp(70px, 16vmin, 130px);
+}
+
+.tpl-name {
+  font-weight: 800;
+  font-size: clamp(14px, 2.4vmin, 20px);
+}
+
+.menu-item.current {
+  outline: 5px solid #fab005;
+}
+
+.menu-item.no-room {
+  opacity: 0.5;
+}
+
+.menu-item.meadow {
+  background: #ebfbee;
+  box-shadow: 0 6px 0 #b2f2bb;
+}
+
+.menu-item.pulse-item {
+  outline: 5px dashed #40c057;
+  animation: pulse 0.9s ease-in-out infinite;
+}
+
+@media (max-width: 480px) {
+  .mode-col .big-btn {
+    width: 54px;
+    height: 54px;
+  }
+  .keys-btn {
+    min-height: 48px;
+  }
+  .key-slot {
+    width: 34px;
+    height: 34px;
+  }
 }

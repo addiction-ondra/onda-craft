@@ -75,3 +75,16 @@ export function generateQuiz(index: number, rng: () => number = Math.random): Qu
 }
 
 export const isCorrect = (q: Quiz, option: string): boolean => q.answer === option;
+
+/** Krátký „otisk“ úkolu – podle něj se pozná opakování. */
+export const quizKey = (q: Quiz): string => `${q.kind}:${q.answer}:${q.item ?? ''}`;
+
+/**
+ * Nový úkol, který není mezi nedávnými (`recent` = otisky posledních úkolů).
+ * Druh se střídá podle `index`, odpověď se losuje, dokud není nová.
+ */
+export function generateFreshQuiz(index: number, recent: string[], rng: () => number = Math.random): Quiz {
+  let q = generateQuiz(index, rng);
+  for (let i = 0; i < 30 && recent.includes(quizKey(q)); i++) q = generateQuiz(index, rng);
+  return q;
+}

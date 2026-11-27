@@ -37,7 +37,7 @@ import { SceneView } from '../render/SceneView';
 import type { Animal, AnimalKind } from '../render/animals';
 import { areNeighbors, CHARACTER_IDS, resolveCharacterPos, type CharacterId, type CharacterState } from '../game/characters';
 import { dropToStand, findPath, reachableCells, walkGoalFromTap, type PathResult } from '../game/pathfinding';
-import { generateQuiz, isCorrect, type Quiz } from '../game/quiz';
+import { generateFreshQuiz, isCorrect, quizKey, type Quiz } from '../game/quiz';
 import { awardKey, missionsLeft, WORLD_ID } from '../game/rewards';
 import { absoluteParts, findTemplateSpot, TEMPLATES, templateBlockAt, templateStatus, type TemplateId } from '../game/templates';
 import type { ActiveTemplate } from '../game/storage';
@@ -119,6 +119,8 @@ export class GameController {
   private nextBoxAt: number | null = null;
   /** Kdy se Ondra a Laura naposledy potkali (aby si nepovídali pořád dokola). */
   lastMeetAt = 0;
+  /** Otisky posledních úkolů z beden – aby se neopakovaly. */
+  private recentQuizzes: string[] = [];
   private savedCharacters: CharacterState[];
 
   constructor() {
@@ -356,6 +358,9 @@ export class GameController {
     this.template = null;
     clearToGround(this.world);
     this.meadow = true;
+    // I na prázdné louce jsou bedny s otazníkem vždy – hned se objeví nové.
+    this.recentBoxes = [];
+    while (this.world.count('question') < QUESTION_BOX_TARGET && this.spawnQuestionBox(false));
     for (const a of this.animals.values()) a.setBubble(null);
     this.view?.effects.setWalkTarget(null);
     this.selectCharacter(null, true);
@@ -580,6 +585,8 @@ export class GameController {
       }
     }
     // Nová bedna s otazníkem – chvíli po vyřešení úkolu, vždy na jiném místě.
+    // Když není žádná (nemělo by nastat), objeví se hned.
+    if (this.world.count('question') === 0) this.spawnQuestionBox(true);
     if (this.world.count('question') < QUESTION_BOX_TARGET) {
       if (this.nextBoxAt === null) this.nextBoxAt = now + BOX_RESPAWN_MS;
       else if (now >= this.nextBoxAt) {
@@ -839,7 +846,8 @@ export class GameController {
   }
 
   private openQuiz(box: Vec3): void {
-    const quiz = generateQuiz(this.quizCounter++);
+    const quiz = generateFreshQuiz(this.quizCounter++, this.recentQuizzes);
+    this.recentQuizzes = [...this.recentQuizzes, quizKey(quiz)].slice(-8);
     this.sfx.play('collect');
     this.set({ overlay: { kind: 'quiz', quiz, box, wrong: [], solved: false, help: false } });
     this.say(`${CS.quiz.intro} ${this.quizPrompt(quiz)}`);
@@ -865,6 +873,8 @@ export class GameController {
         this.world.deleteRaw(o.box);
         this.recentBoxes = [...this.recentBoxes, o.box].slice(-3);
         this.nextBoxAt = Date.now() + BOX_RESPAWN_MS;
+        // Ve světě nesmí být nikdy žádná bedna – poslední se hned nahradí.
+        if (this.world.count('question') === 0) this.spawnQuestionBox(true);
         this.view?.effects.burst(o.box, '#ffd43b', 18);
         this.view?.effects.pop(o.box);
         this.set({ overlay: null });

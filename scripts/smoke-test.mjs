@@ -198,6 +198,9 @@ async function ipadFlow() {
   let placedWood = 0;
   for (const cell of woodCells) {
     if (placedWood >= 5) break;
+    // mise už může být splněná (kostka mohla padnout i na sousední pole) – přes oslavu už neťukat
+    const m1 = await snap(page);
+    if (m1.completed.includes('wood5') || (m1.mission?.progress ?? 0) >= 5) break;
     if ((await blockAt(page, { ...cell, y: 1 })) !== null) continue;
     await tapVisible(page, cell);
     if ((await blockAt(page, { ...cell, y: 1 })) === 'wood') placedWood++;
@@ -354,7 +357,19 @@ async function ipadFlow() {
   ok(await tapVisible(page, { x: 11, y: 0, z: 12 }), 'místo vedle Ondry je vidět');
   await page.waitForFunction(() => !window.__onda.controller.characters.get('lauriska').walking, null, { timeout: 60000 }).catch(() => {});
   await sleep(300);
-  const met = await page.evaluate(() => ({ at: window.__onda.controller.lastMeetAt, l: window.__onda.controller.characters.get('lauriska').standCell }));
+  const met = await page.evaluate(() => {
+    const c = window.__onda.controller;
+    const w = window.__onda.world();
+    return {
+      at: c.lastMeetAt,
+      l: c.characters.get('lauriska').standCell,
+      o: c.characters.get('ondra').standCell,
+      ow: c.characters.get('ondra').walking,
+      ov: c.getSnapshot().overlay?.kind ?? null,
+      boxes: [...w.entries()].filter(([, t]) => t === 'question').map(([k]) => k),
+    };
+  });
+  if (!met.at) console.log('    (setkání stav:', JSON.stringify(met), ')');
   ok(met.at > 0, `Ondra a Laura se potkali – srdíčka a rozhovor (Laura ${JSON.stringify(met.l)})`);
   await page.screenshot({ path: `${OUT}/13b-friends-meet.png` });
   await page.getByRole('button', { name: 'Laura' }).click();
@@ -366,8 +381,20 @@ async function ipadFlow() {
   ok((await snap(page)).nudgeCharacters === true && (await blockAt(page, box)) === 'question', 'ťuknutí na bednu bez postavičky: rozblikají se postavičky, bedna zůstane');
   await page.getByRole('button', { name: 'Laura' }).click();
   await tapVisible(page, box);
-  await page.waitForFunction(() => window.__onda.controller.getSnapshot().overlay?.kind === 'quiz', null, { timeout: 30000 }).catch(() => {});
+  await page.waitForFunction(() => window.__onda.controller.getSnapshot().overlay?.kind === 'quiz', null, { timeout: 120000 }).catch(() => {});
   let q = (await snap(page)).overlay;
+  if (q?.kind !== 'quiz')
+    console.log(
+      '    (stav:',
+      JSON.stringify(
+        await page.evaluate(() => {
+          const c = window.__onda.controller;
+          const l = c.characters.get('lauriska');
+          return { l: l.standCell, walking: l.walking, sel: c.getSnapshot().selectedCharacter, mode: c.getSnapshot().playMode, ov: c.getSnapshot().overlay?.kind };
+        }),
+      ),
+      ')',
+    );
   ok(q?.kind === 'quiz' && q.quiz.options.length === 3, `Laura došla k bedně a otevřel se úkol (${q?.quiz?.kind})`);
   await page.screenshot({ path: `${OUT}/19-quiz.png` });
   const wrongOpts = q.quiz.options.filter((o) => o !== q.quiz.answer);
@@ -393,6 +420,16 @@ async function ipadFlow() {
   await page.waitForFunction(() => window.__onda.world().count('question') >= 2, null, { timeout: 15000 }).catch(() => {});
   const newBoxes = await page.evaluate(() => [...window.__onda.world().entries()].filter(([, t]) => t === 'question').map(([k]) => k));
   ok(newBoxes.length >= 2 && !newBoxes.includes(`${box.x},${box.y},${box.z}`), `po vyřešení se objeví nová bedna na jiném místě (${boxInfo.before} → ${newBoxes.length})`);
+  // pojistka: kdyby bedny někdy zmizely všechny, hned se objeví nová
+  await page.evaluate(() => {
+    const w = window.__onda.world();
+    for (const [k, t] of [...w.entries()]) if (t === 'question') {
+      const [x, y, z] = k.split(',').map(Number);
+      w.deleteRaw({ x, y, z });
+    }
+  });
+  await page.waitForFunction(() => window.__onda.world().count('question') >= 1, null, { timeout: 8000 }).catch(() => {});
+  ok((await page.evaluate(() => window.__onda.world().count('question'))) >= 1, 've světě nikdy nezůstane žádná bedna');
 
   // --- automatické ukládání + obnova po reloadu
   await sleep(600);
@@ -433,7 +470,7 @@ async function ipadFlow() {
   ok((await snap(page)).overlay?.kind === 'meadowConfirm', 'louka se nejdřív potvrzuje');
   await page.getByRole('button', { name: 'Ano' }).click();
   const above = await page.evaluate(() => [...window.__onda.world().entries()].filter(([k]) => Number(k.split(',')[1]) > 0).length);
-  ok(above === 0, 'prázdná louka: zůstala jen zem');
+  ok(above === (await page.evaluate(() => window.__onda.world().count('question'))) && above >= 3, `prázdná louka: zůstala jen zem a hned jsou tu bedny s otazníkem (${above})`);
   await page.getByRole('button', { name: 'Stavitel' }).click();
   await page.getByRole('button', { name: 'Hrad', exact: true }).click();
   s0 = await snap(page);

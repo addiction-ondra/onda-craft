@@ -11,6 +11,12 @@ ovečkou a kuřátkem. Ovládání dotykem, minimum textu, české hlasové poky
 
 Architektura a roadmapa: [PLAN.md](PLAN.md) · pravidla vývoje: [CLAUDE.md](CLAUDE.md)
 
+## Co umí verze 0.5.1
+
+- Bedny s otazníkem jsou ve světě **vždy** (i na prázdné louce, hned po vyčištění).
+  Když se nenajde ideální místo, pravidla se uvolní, takže se bedna objeví pokaždé.
+- Úkoly z beden se neopakují – hra si pamatuje posledních 8 a dá jiný.
+
 ## Co umí verze 0.5
 
 - **Truhla s pokladem se 3 zámky:** klíč nahoře je vidět vždy. Ťuknutí ukáže truhlu –

@@ -392,35 +392,66 @@ export interface BoxSpotOptions {
  * Vybere náhodné nové místo pro bednu s otazníkem: na zemi (ne na vodě),
  * dosažitelné pro postavičky, ne těsně u jiné bedny a ne tam, kde nedávno byla.
  */
-export function pickQuestionSpot(w: World, o: BoxSpotOptions): Vec3 | null {
-  const rng = o.rng ?? Math.random;
+interface SpotRules {
+  /** Jen místa, kam postavičky dojdou. */
+  reachableOnly: boolean;
+  /** Minimální vzdálenost od jiných beden a nedávných míst. */
+  spacing: number;
+  /** Kolik sousedních polí musí být volných (3 = neucpe bránu ani úzkou cestu). */
+  minFreeSides: number;
+}
+
+/** Pravidla od nejpřísnějších po nejvolnější – bedna se nakonec objeví vždy. */
+const SPOT_RULES: SpotRules[] = [
+  { reachableOnly: true, spacing: 3, minFreeSides: 3 },
+  { reachableOnly: true, spacing: 1, minFreeSides: 2 },
+  { reachableOnly: true, spacing: 0, minFreeSides: 1 },
+  { reachableOnly: false, spacing: 0, minFreeSides: 0 },
+];
+
+function spotCandidates(w: World, o: BoxSpotOptions, r: SpotRules): Vec3[] {
   const boxes: Vec3[] = [];
   for (const [k, t] of w.entries()) if (t === 'question') boxes.push(parseKey(k));
   const near = (a: Vec3, b: Vec3, d: number) => Math.abs(a.x - b.x) + Math.abs(a.z - b.z) <= d;
   const doghouse = [DOGHOUSE.inside, DOGHOUSE.door, ...doghouseParts()];
-  const candidates: Vec3[] = [];
-  for (const cell of o.reachable.values()) {
-    // bedna stojí na místě, kam se dá dojít – postavička pak dojde vedle ní
-    const p = { x: cell.x, y: cell.y, z: cell.z };
+  const cells: Vec3[] = [];
+  if (r.reachableOnly) {
+    for (const c of o.reachable.values()) cells.push({ x: c.x, y: c.y, z: c.z });
+  } else {
+    for (let x = 0; x < WORLD_W; x++) for (let z = 0; z < WORLD_D; z++) cells.push({ x, y: 1, z });
+  }
+  const out: Vec3[] = [];
+  for (const p of cells) {
     if (p.y !== 1) continue; // jen na zemi, ať je bedna vidět a dá se k ní dojít
     const below = w.get({ x: p.x, y: 0, z: p.z });
     if (below === undefined || below === 'water') continue;
     if (w.has(p) || w.has({ ...p, y: 2 })) continue;
     if (o.avoid.some((a) => near(a, p, 0))) continue;
     if (doghouse.some((a) => near(a, p, 0))) continue;
-    if (boxes.some((b) => near(b, p, 3))) continue;
-    if (o.recent.some((r) => near(r, p, 3))) continue;
-    // Kolem musí být aspoň 3 volná místa: bedna tak neucpe bránu, dveře ani úzkou cestu
-    // a postavička se k ní vždy postaví.
+    if (r.spacing > 0 && boxes.some((b) => near(b, p, r.spacing))) continue;
+    if (r.spacing > 0 && o.recent.some((q) => near(q, p, r.spacing))) continue;
     const freeSides = [
       [1, 0],
       [-1, 0],
       [0, 1],
       [0, -1],
     ].filter(([dx, dz]) => o.reachable.has(`${p.x + dx},1,${p.z + dz}`)).length;
-    if (freeSides < 3) continue;
-    candidates.push(p);
+    if (freeSides < r.minFreeSides) continue;
+    out.push(p);
   }
-  if (!candidates.length) return null;
-  return candidates[Math.floor(rng() * candidates.length)];
+  return out;
+}
+
+/**
+ * Vybere náhodné nové místo pro bednu s otazníkem. Nejdřív hezké místo (dosažitelné,
+ * daleko od jiných beden, neucpe cestu); když žádné není, pravidla se postupně uvolní,
+ * takže se bedna objeví vždy. null jen tehdy, když na ostrově není jediné volné pole na zemi.
+ */
+export function pickQuestionSpot(w: World, o: BoxSpotOptions): Vec3 | null {
+  const rng = o.rng ?? Math.random;
+  for (const rules of SPOT_RULES) {
+    const candidates = spotCandidates(w, o, rules);
+    if (candidates.length) return candidates[Math.floor(rng() * candidates.length)];
+  }
+  return null;
 }

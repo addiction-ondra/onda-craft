@@ -52,3 +52,35 @@ describe('nové bedny s otazníkem', () => {
     }
   });
 });
+
+describe('bedny vždy a úkoly pokaždé jiné', () => {
+  it('místo pro bednu se najde i v hodně zastavěném světě (pravidla se uvolní)', () => {
+    const w = generateDefaultWorld();
+    clearToGround(w);
+    // postavičky zavřené v malé ohrádce 2×1, zbytek světa nedosažitelný
+    const pen = [
+      { x: 4, y: 1, z: 12 },
+      { x: 5, y: 1, z: 12 },
+    ];
+    for (let x = 3; x <= 6; x++)
+      for (let z = 11; z <= 13; z++) {
+        if (pen.some((p) => p.x === x && p.z === z)) continue;
+        for (const y of [1, 2, 3]) w.setRaw({ x, y, z }, 'stone');
+      }
+    const reachable = reachableCells(w, pen);
+    const spot = pickQuestionSpot(w, { reachable, avoid: [pen[0]], recent: [], rng: seeded(1) });
+    expect(spot).not.toBeNull();
+  });
+
+  it('úkoly z beden se neopakují (posledních 8)', async () => {
+    const { generateFreshQuiz, quizKey } = await import('./quiz');
+    const rng = seeded(11);
+    const recent: string[] = [];
+    for (let i = 0; i < 60; i++) {
+      const q = generateFreshQuiz(i, recent, rng);
+      expect(recent).not.toContain(quizKey(q));
+      recent.push(quizKey(q));
+      if (recent.length > 8) recent.shift();
+    }
+  });
+});

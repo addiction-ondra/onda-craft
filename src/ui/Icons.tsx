@@ -162,3 +162,14 @@ export const IconKey = (p: P) => (
     <path d="M24 24h20M38 24v7M32 24v5" stroke="#e67700" strokeWidth={5} />
   </svg>
 );
+
+/** Mapa světů. */
+export const IconMap = (p: P) => (
+  <svg {...base(p)} strokeWidth={2.5}>
+    <path d="M5 11l12-5 14 5 12-5v31l-12 5-14-5-12 5Z" fill="#fff3bf" stroke="#8a5a2b" />
+    <path d="M17 6v31M31 11v31" stroke="#c9a46a" />
+    <path d="M9 30c4-6 8 2 12-4s9-2 12-8" stroke="#e8590c" strokeDasharray="3 3" />
+    <path d="M33 14l4 4M37 14l-4 4" stroke="#c92a2a" strokeWidth={3} />
+    <circle cx="10" cy="31" r="2.5" fill="#1971c2" stroke="none" />
+  </svg>
+);

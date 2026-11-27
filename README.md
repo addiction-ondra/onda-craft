@@ -11,6 +11,14 @@ ovečkou a kuřátkem. Ovládání dotykem, minimum textu, české hlasové poky
 
 Architektura a roadmapa: [PLAN.md](PLAN.md) · pravidla vývoje: [CLAUDE.md](CLAUDE.md)
 
+## Co umí verze 0.6.1
+
+- Klíč nahoře je šedý, dokud nejsou splněné všechny úkoly; truhla má pak 3 prázdné zámky.
+  Po splnění klíč zezlátne. „Nový svět“ i „Začít úkoly znovu“ v rodičovské zóně vrátí klíč na začátek.
+- **Mapa světů** (ikona mapy u truhly a v pravém panelu pod hradem): náš ostrov „jsi tady“
+  a další ostrovy v mlze. Další světy se teprve připravují.
+- Na telefonu je otáčení a přiblížení v jedné řadě nad spodní lištou (nad Ondrou a Laurou).
+
 ## Co umí verze 0.6
 
 - Hra se jmenuje **Ondra a Laura Craft**. Úvodní nápis je kostičkový 3D (vlastní pixelové

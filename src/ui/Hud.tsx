@@ -21,6 +21,7 @@ import {
   IconHammer,
   IconCastle,
   IconKey,
+  IconMap,
 } from './Icons';
 import { MissionIcon, ProgressSlots } from './MissionIcon';
 
@@ -79,7 +80,11 @@ export function Hud({ game, ui }: Props) {
           >
             <IconCastle />
           </button>
+          <button className="big-btn modebtn" aria-label={CS.ui.worlds} onClick={() => game.openWorlds()}>
+            <IconMap />
+          </button>
         </div>
+        <div className="cam-cluster">
         <div className="cam-row">
           <button className="big-btn cam" aria-label="Otočit doleva" onClick={() => game.rotate(-1)}>
             <IconRotateLeft />
@@ -95,6 +100,7 @@ export function Hud({ game, ui }: Props) {
           <button className="big-btn cam" aria-label="Přiblížit" onClick={() => game.zoom(1.25)}>
             <IconPlus />
           </button>
+        </div>
         </div>
       </div>
       {ui.playMode === 'build' && <Palette game={game} ui={ui} />}

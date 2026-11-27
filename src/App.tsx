@@ -5,6 +5,8 @@ import { ArchitectMenu, BreakOverlay, MeadowConfirm, MissionIntro, MissionMenu, 
 import { ParentZone } from './ui/ParentZone';
 import { QuizOverlay } from './ui/QuizOverlay';
 import { TreasureOverlay } from './ui/TreasureOverlay';
+import { WorldsMap } from './ui/WorldsMap';
+import { WORLD_ID } from './game/rewards';
 import { allMissionsDone } from './game/rewards';
 
 export default function App() {
@@ -27,6 +29,7 @@ export default function App() {
       {o?.kind === 'success' && <Success game={game} ui={ui} id={o.mission} keyAwarded={o.keyAwarded} />}
       {o?.kind === 'architect' && <ArchitectMenu game={game} ui={ui} noRoom={o.noRoom} />}
       {o?.kind === 'meadowConfirm' && <MeadowConfirm game={game} />}
+      {o?.kind === 'worlds' && <WorldsMap game={game} hasKey={ui.keys.includes(WORLD_ID)} />}
       {o?.kind === 'treasure' && <TreasureOverlay game={game} keys={ui.keys.length} fresh={o.fresh} allDone={allMissionsDone(ui.completed)} />}
       {o?.kind === 'templateDone' && <TemplateDone game={game} template={o.template} />}
       {o?.kind === 'parents' && <ParentZone game={game} ui={ui} />}

@@ -181,6 +181,16 @@ export const CS = {
     ],
   ] as Array<Array<{ who: 'ondra' | 'lauriska'; text: string }>>,
 
+  worlds: {
+    title: 'Mapa světů',
+    names: ['Ostrov s hradem', 'Zimní ostrov', 'Ostrov s majákem'],
+    noKey: 'Tohle je mapa světů. Jsi na ostrově s hradem. Až tu splníš všechny úkoly a získáš klíč, otevře se cesta dál.',
+    withKey: 'Tohle je mapa světů. Máš klíč! Další ostrov se právě staví a brzy se tam podíváš.',
+    here: 'Tady jsi teď. Ostrov s hradem!',
+    locked: 'Tam se dostaneš s klíčem. Nejdřív splň všechny úkoly na ostrově s hradem.',
+    building: 'Tenhle ostrov se ještě staví. Brzy se tam podíváš!',
+  },
+
   builder: {
     menu: 'Stavitel! Co postavíme? Hrad, domeček, nebo farmu?',
     names: { castle: 'Hrad', house: 'Domeček', farm: 'Farma s ohradou' },
@@ -268,8 +278,9 @@ export const CS = {
     keys: 'Klíče k pokladu',
     treasure: 'Truhla s pokladem',
     toMissions: 'Jdi na úkoly',
-    confirmReset: 'Opravdu smazat stavbu a začít s novým světem?',
-    confirmMissions: 'Opravdu vynulovat hvězdičky u úkolů?',
+    worlds: 'Mapa světů',
+    confirmReset: 'Opravdu začít úplně od začátku? Smaže se stavba, splněné úkoly i klíč k pokladu.',
+    confirmMissions: 'Opravdu vynulovat hvězdičky u úkolů? Zešedne i klíč k pokladu.',
     yes: 'Ano',
     no: 'Ne',
     testVoice: 'Vyzkoušet zvuk a hlas',

@@ -1825,3 +1825,79 @@ h3 {
     opacity: 0;
   }
 }
+
+/* ------------------------------------------------------------ mapa světů */
+
+.worlds-card {
+  width: min(680px, 100%);
+  padding-top: 64px;
+}
+
+.worlds-map {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.world-island {
+  cursor: pointer;
+}
+
+.world-island.here {
+  animation: bob 2.2s ease-in-out infinite;
+}
+
+.world-island.locked .fog {
+  animation: fog 4s ease-in-out infinite;
+}
+
+.world-island.soon text {
+  animation: pulse 1s ease-in-out infinite;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+@keyframes fog {
+  50% {
+    opacity: 0.55;
+  }
+}
+
+/* ------------------------------------------------------------ ovládání kamery */
+
+.cam-cluster {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+}
+
+/* telefon na výšku: otáčení a přiblížení v jedné řadě nad spodní lištou (nad Ondrou a Laurou) */
+@media (max-width: 480px) {
+  :root {
+    --bar-h: calc(var(--swatch) * 1.15 + 34px);
+    --cam: 50px;
+  }
+  .cam-cluster {
+    position: fixed;
+    left: 50%;
+    transform: translateX(-50%);
+    bottom: calc(var(--sab) + var(--bar-h) + 10px);
+    flex-direction: row;
+    gap: 10px;
+    z-index: 2;
+  }
+  .cam-cluster .cam-row {
+    gap: 10px;
+  }
+  .cam-cluster .big-btn.cam {
+    width: var(--cam);
+    height: var(--cam);
+    padding: 9px;
+  }
+  .side {
+    bottom: calc(var(--sab) + var(--bar-h) + var(--cam) + 26px);
+  }
+  .side.right .mode-col {
+    margin-bottom: 0;
+  }
+}

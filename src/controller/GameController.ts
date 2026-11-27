@@ -53,6 +53,7 @@ export type Overlay =
   | { kind: 'architect'; noRoom?: TemplateId }
   | { kind: 'meadowConfirm' }
   | { kind: 'treasure'; fresh: boolean }
+  | { kind: 'worlds' }
   | { kind: 'templateDone'; template: TemplateId }
   | { kind: 'missions' }
   | { kind: 'parents' }
@@ -557,13 +558,40 @@ export class GameController {
     for (const a of this.animals.values()) a.setBubble(null);
     this.view?.effects.setWalkTarget(null);
     this.selectCharacter(null, true);
-    this.set({ mission: null, highlightMaterial: null, template: null });
+    // Nový svět = úplně od začátku: i úkoly a klíč z tohoto ostrova.
+    this.set({
+      mission: null,
+      highlightMaterial: null,
+      template: null,
+      completed: [],
+      keys: this.snapshot.keys.filter((k) => k !== WORLD_ID),
+    });
     this.saveNow();
   }
 
   resetMissions(): void {
-    this.set({ completed: [] });
+    // Klíč z ostrova patří k úkolům – když se úkoly začnou znovu, zešedne i klíč.
+    this.set({ completed: [], keys: this.snapshot.keys.filter((k) => k !== WORLD_ID) });
     this.saveNow();
+  }
+
+  /** Mapa světů (z truhly nebo z pravého panelu). */
+  openWorlds(): void {
+    this.markActivity();
+    this.sfx.play('click');
+    this.set({ overlay: { kind: 'worlds' } });
+    this.say(this.snapshot.keys.includes(WORLD_ID) ? CS.worlds.withKey : CS.worlds.noKey);
+  }
+
+  /** Ťuknutí na ostrov v mapě. */
+  tapWorld(index: number): void {
+    this.sfx.play(index === 0 ? 'click' : 'soft');
+    if (index === 0) {
+      this.say(CS.worlds.here);
+      this.closeOverlay();
+      return;
+    }
+    this.say(this.snapshot.keys.includes(WORLD_ID) ? CS.worlds.building : CS.worlds.locked);
   }
 
   // --------------------------------------------------------------- herní smyčka

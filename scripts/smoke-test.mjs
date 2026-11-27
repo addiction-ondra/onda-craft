@@ -151,7 +151,13 @@ async function ipadFlow() {
     (await snap(page)).overlay?.kind === 'treasure' && (await page.locator('.chest').isVisible()) && (await page.getByRole('button', { name: 'Jdi na úkoly' }).isVisible()),
     'klíč nahoře je vidět i bez klíče: ukáže truhlu se 3 zámky a pošle k úkolům',
   );
+  ok((await page.locator('.key-in').count()) === 0, 'bez splněných úkolů jsou v truhle 3 prázdné zámky');
   await page.screenshot({ path: `${OUT}/02b-treasure-empty.png` });
+  await page.locator('.treasure-card').getByRole('button', { name: 'Mapa světů' }).click();
+  ok((await snap(page)).overlay?.kind === 'worlds' && (await page.locator('.worlds-map').isVisible()), 'z truhly se ikonou mapy otevře mapa světů');
+  await page.getByRole('button', { name: 'Zavřít' }).click();
+  await page.locator('.mode-col').getByRole('button', { name: 'Mapa světů' }).click();
+  ok((await snap(page)).overlay?.kind === 'worlds', 'mapa světů je i v pravém panelu pod hradem');
   await page.getByRole('button', { name: 'Zavřít' }).click();
   await page.getByRole('button', { name: 'Stavění z kostek' }).click();
   ok((await snap(page)).playMode === 'build' && (await page.getByRole('button', { name: 'kámen', exact: true }).isVisible()), 'kladivo zapne stavění z kostek (paleta)');
@@ -458,6 +464,8 @@ async function ipadFlow() {
   await page.getByRole('button', { name: 'Nový svět' }).click();
   await page.getByRole('button', { name: 'Ano' }).click();
   ok((await blockAt(page, { x: bx, y: 1, z: 7 })) === null, 'reset světa (s potvrzením) funguje');
+  s0 = await snap(page);
+  ok(s0.completed.length === 0 && !s0.keys.includes('island'), 'nový svět vrátí na začátek i úkoly a klíč (klíč zešedne)');
   await page.getByRole('button', { name: 'Zavřít' }).click();
 
   // --- Stavitel: ve výchozím světě není na hrad místo → prázdná louka → postavit hrad

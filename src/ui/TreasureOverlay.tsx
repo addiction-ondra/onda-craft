@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import type { GameController } from '../controller/GameController';
 import { TREASURE_LOCKS } from '../game/rewards';
 import { CS } from '../i18n/cs';
-import { IconClose, IconFlag, IconKey } from './Icons';
+import { IconClose, IconFlag, IconKey, IconMap } from './Icons';
 
 /** Truhla s pokladem: tři zámky, v každém zámku jeden klíč za jeden svět. */
 export function TreasureChest({ keys, fresh }: { keys: number; fresh: boolean }) {
@@ -71,11 +71,16 @@ export function TreasureOverlay({ game, keys, fresh, allDone }: { game: GameCont
           </div>
         )}
         <TreasureChest keys={keys} fresh={fresh} />
-        {!allDone && (
-          <button className="go-btn" aria-label={CS.ui.toMissions} onClick={() => game.openMissions()}>
-            <IconFlag />
+        <div className="success-actions">
+          {!allDone && (
+            <button className="go-btn" aria-label={CS.ui.toMissions} onClick={() => game.openMissions()}>
+              <IconFlag />
+            </button>
+          )}
+          <button className="go-btn secondary" aria-label={CS.ui.worlds} onClick={() => game.openWorlds()}>
+            <IconMap />
           </button>
-        )}
+        </div>
       </div>
     </div>
   );

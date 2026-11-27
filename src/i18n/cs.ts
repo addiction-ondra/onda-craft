@@ -61,6 +61,7 @@ export const CS = {
     boxNeedsFriend: 'V bedně je úkol! Ťukni na Ondru nebo Lauriskou a pošli je k bedně.',
     boxCantErase: 'Tuhle bednu otevře jen Ondra nebo Lauriska.',
     newBoxes: 'Ve světě jsou nové bedny s otazníkem!',
+    newBox: 'Objevila se nová bedna s otazníkem! Najdeš ji?',
     animals: {
       dog: 'Haf haf! Já jsem buldoček Frený.',
       sheep: 'Bééé! Já jsem ovečka.',

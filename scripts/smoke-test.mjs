@@ -299,6 +299,7 @@ async function ipadFlow() {
   s = await snap(page);
   const dogCell = await page.evaluate(() => window.__onda.controller.animals.get('dog').standCell);
   ok(s.completed.includes('doghouse') && s.overlay?.kind === 'success', 'mise 5: domeček hotový, oslava');
+  await page.locator('.key-reward').waitFor({ state: 'visible', timeout: 3000 }).catch(() => {});
   ok(
     s.overlay?.keyAwarded === true && s.keys.includes('island') && (await page.locator('.key-reward').isVisible()),
     `za všechny úkoly klíč k pokladu (${JSON.stringify({ ov: s.overlay, keys: s.keys, vis: await page.locator('.key-reward').count() })})`,
@@ -354,6 +355,20 @@ async function ipadFlow() {
   await page.screenshot({ path: `${OUT}/20-quiz-solved.png` });
   await page.waitForFunction(() => window.__onda.controller.getSnapshot().overlay === null, null, { timeout: 5000 }).catch(() => {});
   ok((await blockAt(page, box)) === null, 'bedna se po vyřešení otevře (zmizí)');
+  const boxInfo = await page.evaluate(() => {
+    const c = window.__onda.controller;
+    const w = window.__onda.world();
+    const boxes = [...w.entries()].filter(([, t]) => t === 'question').map(([k]) => k);
+    for (const k of boxes.slice(1)) {
+      const [x, y, z] = k.split(',').map(Number);
+      w.deleteRaw({ x, y, z });
+    }
+    c.nextBoxAt = Date.now() - 1; // místo 30 s čekání
+    return { before: w.count('question'), recent: c.recentBoxes };
+  });
+  await page.waitForFunction(() => window.__onda.world().count('question') >= 2, null, { timeout: 15000 }).catch(() => {});
+  const newBoxes = await page.evaluate(() => [...window.__onda.world().entries()].filter(([, t]) => t === 'question').map(([k]) => k));
+  ok(newBoxes.length >= 2 && !newBoxes.includes(`${box.x},${box.y},${box.z}`), `po vyřešení se objeví nová bedna na jiném místě (${boxInfo.before} → ${newBoxes.length})`);
 
   // --- automatické ukládání + obnova po reloadu
   await sleep(600);

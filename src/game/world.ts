@@ -374,3 +374,53 @@ export function clearToGround(w: World): void {
   }
   for (const p of above) w.deleteRaw(p);
 }
+
+/** Kolik beden s otazníkem má ve světě být. */
+export const QUESTION_BOX_TARGET = 3;
+
+export interface BoxSpotOptions {
+  /** Místa, kam postavičky dojdou (z `reachableCells`). Bedna musí stát vedle jednoho z nich. */
+  reachable: Map<string, Vec3>;
+  /** Kde bedna být nesmí (postavičky, zvířátka, rozestavěná stavba…). */
+  avoid: Vec3[];
+  /** Kde byly bedny naposledy – nová má být jinde. */
+  recent: Vec3[];
+  rng?: () => number;
+}
+
+/**
+ * Vybere náhodné nové místo pro bednu s otazníkem: na zemi (ne na vodě),
+ * dosažitelné pro postavičky, ne těsně u jiné bedny a ne tam, kde nedávno byla.
+ */
+export function pickQuestionSpot(w: World, o: BoxSpotOptions): Vec3 | null {
+  const rng = o.rng ?? Math.random;
+  const boxes: Vec3[] = [];
+  for (const [k, t] of w.entries()) if (t === 'question') boxes.push(parseKey(k));
+  const near = (a: Vec3, b: Vec3, d: number) => Math.abs(a.x - b.x) + Math.abs(a.z - b.z) <= d;
+  const doghouse = [DOGHOUSE.inside, DOGHOUSE.door, ...doghouseParts()];
+  const candidates: Vec3[] = [];
+  for (const cell of o.reachable.values()) {
+    // bedna stojí na místě, kam se dá dojít – postavička pak dojde vedle ní
+    const p = { x: cell.x, y: cell.y, z: cell.z };
+    if (p.y !== 1) continue; // jen na zemi, ať je bedna vidět a dá se k ní dojít
+    const below = w.get({ x: p.x, y: 0, z: p.z });
+    if (below === undefined || below === 'water') continue;
+    if (w.has(p) || w.has({ ...p, y: 2 })) continue;
+    if (o.avoid.some((a) => near(a, p, 0))) continue;
+    if (doghouse.some((a) => near(a, p, 0))) continue;
+    if (boxes.some((b) => near(b, p, 3))) continue;
+    if (o.recent.some((r) => near(r, p, 3))) continue;
+    // Kolem musí být aspoň 3 volná místa: bedna tak neucpe bránu, dveře ani úzkou cestu
+    // a postavička se k ní vždy postaví.
+    const freeSides = [
+      [1, 0],
+      [-1, 0],
+      [0, 1],
+      [0, -1],
+    ].filter(([dx, dz]) => o.reachable.has(`${p.x + dx},1,${p.z + dz}`)).length;
+    if (freeSides < 3) continue;
+    candidates.push(p);
+  }
+  if (!candidates.length) return null;
+  return candidates[Math.floor(rng() * candidates.length)];
+}

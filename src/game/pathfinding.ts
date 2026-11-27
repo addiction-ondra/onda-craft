@@ -121,3 +121,27 @@ export function walkGoalFromTap(w: World, pos: Vec3, normal: Vec3): Vec3 {
   const side = { x: pos.x + normal.x, y: pos.y + Math.max(0, normal.y), z: pos.z + normal.z };
   return dropToStand(w, side.x, side.y, side.z) ?? { x: pos.x, y: pos.y + 1, z: pos.z };
 }
+
+/** Všechna místa, kam se dá z daných startů dojít (klíče "x,y,z"). */
+export function reachableCells(w: World, starts: Vec3[], height = 2): Map<string, Vec3> {
+  const seen = new Map<string, Vec3>();
+  const queue: Vec3[] = [];
+  for (const s of starts) {
+    if (!isStandable(w, s, height)) continue;
+    const k = keyOf(s);
+    if (!seen.has(k)) {
+      seen.set(k, s);
+      queue.push(s);
+    }
+  }
+  while (queue.length) {
+    const cur = queue.shift()!;
+    for (const n of neighbors(w, cur, height)) {
+      const k = keyOf(n);
+      if (seen.has(k)) continue;
+      seen.set(k, n);
+      queue.push(n);
+    }
+  }
+  return seen;
+}

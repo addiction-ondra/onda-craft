@@ -108,8 +108,9 @@ React UI ◄── subscribe/getSnapshot ◄── GameController
 **Bedny s otazníkem:** ve světě jsou 4 bedny (u startu, na nádvoří, za řekou – tam vede až most,
 u domečku). Otevře je jen postavička, která k bedně dojde. Pak přijde krátký úkol se 3 obrázkovými
 odpověďmi a hlasem: počítání 1–5, barva kostky, tvar, písmeno („O jako Ondra“). Špatná odpověď =
-„zkus znovu“, po 2 pokusech se správná rozsvítí. Když jsou všechny otevřené, při dalším spuštění
-se objeví nové.
+„zkus znovu“, po 2 pokusech se správná rozsvítí. Ve světě jsou vždy 3 bedny: asi 30 s po vyřešení
+úkolu se objeví nová na jiném náhodném místě, kam postavičky dojdou (ne za řekou bez mostu,
+ne v bráně ani v rozestavěné stavbě; i na prázdné louce).
 
 Každá mise má: **úvod s animovanou ukázkou** (karta + hlas), **průběh** (ikonky
 se plní), **nápovědu** (po nečinnosti nebo při jiném materiálu – nikdy trest),

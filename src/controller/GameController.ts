@@ -26,7 +26,8 @@ import {
   doghouseParts,
   generateDefaultWorld,
   isInCastle,
-  refillQuestionBoxes,
+  pickQuestionSpot,
+  QUESTION_BOX_TARGET,
   RIVER_Z,
   type Vec3,
   type World,
@@ -35,10 +36,10 @@ import { CS } from '../i18n/cs';
 import { SceneView } from '../render/SceneView';
 import type { Animal, AnimalKind } from '../render/animals';
 import { CHARACTER_IDS, resolveCharacterPos, type CharacterId, type CharacterState } from '../game/characters';
-import { dropToStand, findPath, walkGoalFromTap, type PathResult } from '../game/pathfinding';
+import { dropToStand, findPath, reachableCells, walkGoalFromTap, type PathResult } from '../game/pathfinding';
 import { generateQuiz, isCorrect, type Quiz } from '../game/quiz';
 import { awardKey } from '../game/rewards';
-import { findTemplateSpot, templateBlockAt, templateStatus, type TemplateId } from '../game/templates';
+import { absoluteParts, findTemplateSpot, TEMPLATES, templateBlockAt, templateStatus, type TemplateId } from '../game/templates';
 import type { ActiveTemplate } from '../game/storage';
 
 export type Mode = 'build' | 'erase';
@@ -81,6 +82,8 @@ export interface UiSnapshot {
 }
 
 const SAVE_DEBOUNCE_MS = 400;
+/** Za jak dlouho po vyřešení úkolu se objeví nová bedna. */
+const BOX_RESPAWN_MS = 30_000;
 const pickOne = <T>(a: T[]): T => a[Math.floor(Math.random() * a.length)];
 
 export class GameController {
@@ -107,6 +110,10 @@ export class GameController {
   private template: ActiveTemplate | null = null;
   private meadow = false;
   private lastGlowHint = 0;
+  /** Kde byly bedny naposledy – nová se objeví jinde. */
+  private recentBoxes: Vec3[] = [];
+  /** Kdy se má objevit další bedna (null = nic nečeká). */
+  private nextBoxAt: number | null = null;
   private savedCharacters: CharacterState[];
 
   constructor() {
@@ -123,9 +130,6 @@ export class GameController {
     this.mission = loaded?.activeMission && !loaded.activeMission.done ? loaded.activeMission : null;
     if (this.mission) restoreMission(this.mission, this.world);
     this.meadow = loaded?.meadow ?? false;
-    // Když jsou všechny bedny otevřené (nebo jde o starší uložení), objeví se nové.
-    // Na „prázdné louce“ ne – tam chce dítě jen čistou zem.
-    if (!this.meadow) refillQuestionBoxes(this.world);
     this.template = loaded?.template ?? null;
     if (this.template && templateStatus(this.world, this.template.id, this.template.origin).done) this.template = null;
     const completedLoaded = loaded?.completed ?? [];
@@ -196,6 +200,8 @@ export class GameController {
       this.characters.set(id, this.view.addAnimal(id, resolveCharacterPos(this.world, id, saved)));
     }
     this.refreshMissionVisuals();
+    // Ve světě mají být vždy 3 bedny – chybějící (např. ze starší verze) se doplní hned a potichu.
+    while (this.world.count('question') < QUESTION_BOX_TARGET && this.spawnQuestionBox(false));
     this.tickTimer = window.setInterval(this.tick, 1000);
     if (new URLSearchParams(location.search).has('test')) {
       (window as unknown as Record<string, unknown>).__onda = { controller: this, view: this.view, world: () => this.world };
@@ -552,6 +558,16 @@ export class GameController {
         this.markActivity();
       }
     }
+    // Nová bedna s otazníkem – chvíli po vyřešení úkolu, vždy na jiném místě.
+    if (this.world.count('question') < QUESTION_BOX_TARGET) {
+      if (this.nextBoxAt === null) this.nextBoxAt = now + BOX_RESPAWN_MS;
+      else if (now >= this.nextBoxAt) {
+        this.nextBoxAt = null;
+        this.spawnQuestionBox(true);
+      }
+    } else {
+      this.nextBoxAt = null;
+    }
     // Jemné připomenutí přestávky (rodičovské nastavení).
     if (s.settings.breakReminderMin > 0 && now - this.playStarted > s.settings.breakReminderMin * 60_000) {
       this.playStarted = now;
@@ -737,6 +753,30 @@ export class GameController {
 
   // ------------------------------------------------------------- bedny s otazníkem
 
+  /** Postaví novou bednu na náhodné dosažitelné místo. `announce` = třpyt + hlas. */
+  private spawnQuestionBox(announce: boolean): boolean {
+    const starts = [...this.characters.values()].map((a) => a.standCell);
+    if (!starts.length) starts.push(...this.savedCharacters.map((c) => c.pos));
+    const avoid = [...starts, ...[...this.animals.values()].map((a) => a.standCell)];
+    if (this.template) {
+      const t = this.template;
+      for (const p of absoluteParts(t.id, t.origin)) avoid.push({ ...p.pos, y: 1 });
+      const e = TEMPLATES[t.id].entrance;
+      avoid.push({ x: t.origin.x + e.x, y: 1, z: t.origin.z + e.z });
+    }
+    const spot = pickQuestionSpot(this.world, { reachable: reachableCells(this.world, starts), avoid, recent: this.recentBoxes });
+    if (!spot) return false;
+    this.world.setRaw(spot, 'question');
+    if (announce) {
+      this.view?.effects.burst(spot, '#ffd43b', 14);
+      this.view?.effects.pop(spot);
+      this.sfx.play('collect');
+      if (!this.snapshot.overlay) this.say(CS.voice.newBox);
+    }
+    this.scheduleSave();
+    return true;
+  }
+
   private quizPrompt(q: Quiz): string {
     const t = CS.quiz;
     switch (q.kind) {
@@ -776,6 +816,8 @@ export class GameController {
         const cur = this.snapshot.overlay;
         if (cur?.kind !== 'quiz' || cur.box !== o.box) return;
         this.world.deleteRaw(o.box);
+        this.recentBoxes = [...this.recentBoxes, o.box].slice(-3);
+        this.nextBoxAt = Date.now() + BOX_RESPAWN_MS;
         this.view?.effects.burst(o.box, '#ffd43b', 18);
         this.view?.effects.pop(o.box);
         this.set({ overlay: null });

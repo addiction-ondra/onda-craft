@@ -11,6 +11,11 @@ ovečkou a kuřátkem. Ovládání dotykem, minimum textu, české hlasové poky
 
 Architektura a roadmapa: [PLAN.md](PLAN.md) · pravidla vývoje: [CLAUDE.md](CLAUDE.md)
 
+## Co umí verze 0.4.1
+
+- Bedny s otazníkem se po vyřešení úkolu objevují znovu (asi za 30 s) na jiném místě,
+  kam Ondra a Lauriska dojdou. Ve světě jsou vždy 3, i na prázdné louce.
+
 ## Co umí verze 0.4
 
 - **Tři režimy vpravo:**

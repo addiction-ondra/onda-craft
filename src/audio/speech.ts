@@ -33,29 +33,42 @@ export class Speech {
       cs.find((v) => /premium|enhanced|vylepšen/i.test(v.name)) ?? cs.find((v) => v.localService) ?? cs[0] ?? null;
   }
 
-  /** Odemkne syntézu na iOS – volat přímo v obsluze ťuknutí. */
+  /**
+   * Připraví syntézu na iOS – volat přímo v obsluze ťuknutí.
+   * (Samotné odemknutí zajistí první `say()` ve stejném gestu.)
+   */
   unlock(): void {
     if (!this.synth) return;
+    if (!this.voice) this.pickVoice();
     try {
-      const u = new SpeechSynthesisUtterance(' ');
-      u.volume = 0;
-      u.lang = 'cs-CZ';
-      this.synth.speak(u);
+      // iOS Safari občas nechá syntézu „zaseknutou“ v pauze.
+      if (this.synth.paused) this.synth.resume();
     } catch {
       /* ignore */
     }
   }
 
+  /** iOS zahodí promluvu, na kterou nevede žádný odkaz – držíme ji, dokud nedomluví. */
+  private current: SpeechSynthesisUtterance | null = null;
+
   /** Řekne větu. Předchozí nedořečenou větu přeruší (dítě nečeká na frontu). */
   say(text: string, opts: { interrupt?: boolean } = {}): void {
     if (!this.enabled || !this.synth || !text) return;
     try {
-      if (opts.interrupt !== false) this.synth.cancel();
+      if (!this.voice) this.pickVoice();
+      // cancel() jen když opravdu něco mluví – na iOS jinak spolkne i novou větu.
+      if (opts.interrupt !== false && (this.synth.speaking || this.synth.pending)) this.synth.cancel();
+      if (this.synth.paused) this.synth.resume();
       const u = new SpeechSynthesisUtterance(text);
       u.lang = 'cs-CZ';
       if (this.voice) u.voice = this.voice;
       u.rate = this.rate;
       u.pitch = 1.1;
+      u.volume = 1;
+      u.onend = u.onerror = () => {
+        if (this.current === u) this.current = null;
+      };
+      this.current = u;
       this.synth.speak(u);
     } catch {
       /* hlas je jen bonus – hra funguje i bez něj */

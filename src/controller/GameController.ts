@@ -91,6 +91,8 @@ export class GameController {
     this.applySettings(this.snapshot.settings);
 
     window.addEventListener('pagehide', this.saveNow);
+    // Každý dotyk je uživatelské gesto – iOS v něm dovolí znovu zapnout uspaný zvuk.
+    window.addEventListener('pointerdown', () => this.snapshot.started && this.sfx.wake(), { capture: true });
     document.addEventListener('visibilitychange', this.onVisibility);
   }
 
@@ -275,7 +277,9 @@ export class GameController {
   }
 
   testVoice(): void {
+    this.sfx.unlock();
     this.speech.unlock();
+    this.sfx.play('success');
     this.say(pickOne(CS.voice.praise));
     this.set({ hasCzechVoice: this.speech.hasCzechVoice });
   }

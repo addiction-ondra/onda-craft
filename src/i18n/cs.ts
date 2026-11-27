@@ -101,7 +101,9 @@ export const CS = {
     confirmMissions: 'Opravdu vynulovat hvězdičky u úkolů?',
     yes: 'Ano',
     no: 'Ne',
-    testVoice: 'Vyzkoušet hlas',
+    testVoice: 'Vyzkoušet zvuk a hlas',
+    soundHelp:
+      'Neslyšíte nic? Zvyšte hlasitost tlačítky na boku. Na iPhonu vypněte tichý režim (přepínač nebo tlačítko Akce na boku). Na iPadu zkontrolujte Ovládací centrum (ikona zvonku).',
     noCzechVoice: 'V zařízení nebyl nalezen český hlas. Na iPadu: Nastavení → Zpřístupnění → Předčítání → Hlasy → Čeština.',
     installTitle: 'Hraní bez internetu',
     installText: 'Safari → Sdílet → Přidat na plochu. Hra pak funguje i offline a vše se ukládá v zařízení.',

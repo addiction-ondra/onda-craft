@@ -130,6 +130,15 @@ function ParentSettings({ game, ui }: Props) {
         </>
       )}
       <Toggle label={CS.ui.sounds} value={s.sounds} onChange={(v) => up({ sounds: v })} />
+      {!s.voice && (
+        <div className="setting-row">
+          <span />
+          <button className="text-btn" onClick={() => game.testVoice()}>
+            {CS.ui.testVoice}
+          </button>
+        </div>
+      )}
+      <p className="note">{CS.ui.soundHelp}</p>
       <Toggle label={CS.ui.autoHints} value={s.autoHints} onChange={(v) => up({ autoHints: v })} />
       <Choice
         label={CS.ui.breakReminder}

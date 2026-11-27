@@ -84,6 +84,7 @@ async function ipadFlow() {
   await page.getByRole('button', { name: 'Hrát' }).click();
   await sleep(500);
   ok((await snap(page)).started, 'hra se spustí tlačítkem Hrát');
+  ok((await page.evaluate(() => window.__onda.controller.sfx.ctx?.state)) === 'running', 'zvuk (Web Audio) se po ťuknutí na Hrát zapne');
   await page.screenshot({ path: `${OUT}/02-world.png` });
 
   // --- výběr materiálu a pokládání

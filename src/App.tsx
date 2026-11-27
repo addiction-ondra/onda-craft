@@ -4,6 +4,8 @@ import { Hud } from './ui/Hud';
 import { ArchitectMenu, BreakOverlay, MeadowConfirm, MissionIntro, MissionMenu, StartScreen, Success, TemplateDone } from './ui/Overlays';
 import { ParentZone } from './ui/ParentZone';
 import { QuizOverlay } from './ui/QuizOverlay';
+import { TreasureOverlay } from './ui/TreasureOverlay';
+import { allMissionsDone } from './game/rewards';
 
 export default function App() {
   const [game] = useState(() => new GameController());
@@ -25,6 +27,7 @@ export default function App() {
       {o?.kind === 'success' && <Success game={game} ui={ui} id={o.mission} keyAwarded={o.keyAwarded} />}
       {o?.kind === 'architect' && <ArchitectMenu game={game} ui={ui} noRoom={o.noRoom} />}
       {o?.kind === 'meadowConfirm' && <MeadowConfirm game={game} />}
+      {o?.kind === 'treasure' && <TreasureOverlay game={game} keys={ui.keys.length} fresh={o.fresh} allDone={allMissionsDone(ui.completed)} />}
       {o?.kind === 'templateDone' && <TemplateDone game={game} template={o.template} />}
       {o?.kind === 'parents' && <ParentZone game={game} ui={ui} />}
       {o?.kind === 'break' && <BreakOverlay game={game} />}

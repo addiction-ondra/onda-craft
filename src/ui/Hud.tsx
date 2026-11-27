@@ -1,6 +1,7 @@
 import type { GameController, UiSnapshot } from '../controller/GameController';
 import { PALETTE } from '../game/blocks';
 import { CHARACTER_IDS } from '../game/characters';
+import { TREASURE_LOCKS } from '../game/rewards';
 import { MISSIONS } from '../game/missions';
 import { CS } from '../i18n/cs';
 import { iconFor } from './blockIcons';
@@ -134,15 +135,13 @@ function TopBar({ game, ui }: Props) {
         </button>
       )}
       <div className="top-right">
-        {ui.keys.length > 0 && (
-          <button className="keys-btn" aria-label={CS.ui.keys} onClick={() => game.tapKeys()}>
-            {ui.keys.map((k) => (
-              <span key={k} className="key-slot">
-                <IconKey />
-              </span>
-            ))}
-          </button>
-        )}
+        <button className={`keys-btn ${ui.keys.length ? '' : 'empty'}`} aria-label={CS.ui.keys} onClick={() => game.tapKeys()}>
+          {Array.from({ length: TREASURE_LOCKS }, (_, i) => (
+            <span key={i} className={`key-slot ${i < ui.keys.length ? 'have' : ''}`}>
+              <IconKey />
+            </span>
+          ))}
+        </button>
         <button className="parent-btn" aria-label={CS.ui.parents} onClick={() => game.openParents()}>
           <IconGear />
         </button>

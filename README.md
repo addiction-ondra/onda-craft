@@ -11,6 +11,15 @@ ovečkou a kuřátkem. Ovládání dotykem, minimum textu, české hlasové poky
 
 Architektura a roadmapa: [PLAN.md](PLAN.md) · pravidla vývoje: [CLAUDE.md](CLAUDE.md)
 
+## Co umí verze 0.5
+
+- **Truhla s pokladem se 3 zámky:** klíč nahoře je vidět vždy. Ťuknutí ukáže truhlu –
+  když jsou úkoly hotové, hlas řekne „Jdi objevit další svět a získej další klíč“;
+  když ne, řekne, kolik úkolů zbývá, a nabídne tlačítko na úkoly.
+- **Oslava klíče:** po posledním úkolu konfety a klíč vletí do prvního zámku truhly.
+- **Ondra a Laura se potkají:** když jeden dojde k druhému, nad oběma se objeví srdíčko,
+  společně vyskočí, otočí se k sobě a krátce si popovídají (různé rozhovory, každý jiným hlasem).
+
 ## Co umí verze 0.4.1
 
 - Bedny s otazníkem se po vyřešení úkolu objevují znovu (asi za 30 s) na jiném místě,

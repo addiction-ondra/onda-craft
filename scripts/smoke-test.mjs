@@ -146,6 +146,13 @@ async function ipadFlow() {
   const sizeBefore = await page.evaluate(() => window.__onda.world().size);
   await tapCell(page, { x: 3, y: 0, z: 4 });
   ok((await page.evaluate(() => window.__onda.world().size)) === sizeBefore && (await snap(page)).nudgeCharacters, 'v režimu chození ťuknutí nic nepostaví, jen poradí vybrat kamaráda');
+  await page.getByRole('button', { name: 'Klíče k pokladu' }).click();
+  ok(
+    (await snap(page)).overlay?.kind === 'treasure' && (await page.locator('.chest').isVisible()) && (await page.getByRole('button', { name: 'Jdi na úkoly' }).isVisible()),
+    'klíč nahoře je vidět i bez klíče: ukáže truhlu se 3 zámky a pošle k úkolům',
+  );
+  await page.screenshot({ path: `${OUT}/02b-treasure-empty.png` });
+  await page.getByRole('button', { name: 'Zavřít' }).click();
   await page.getByRole('button', { name: 'Stavění z kostek' }).click();
   ok((await snap(page)).playMode === 'build' && (await page.getByRole('button', { name: 'kámen', exact: true }).isVisible()), 'kladivo zapne stavění z kostek (paleta)');
   await page.getByRole('button', { name: 'kámen', exact: true }).click();
@@ -307,6 +314,13 @@ async function ipadFlow() {
   await page.screenshot({ path: `${OUT}/18b-key-reward.png` });
   ok(dogCell.x === 3 && dogCell.y === 1 && dogCell.z === 11, `Frený vlezl do domečku (${JSON.stringify(dogCell)})`);
   await page.getByRole('button', { name: 'Stavět dál' }).click();
+  s = await snap(page);
+  ok(s.overlay?.kind === 'treasure' && s.overlay.fresh === true, 'po posledním úkolu oslava s truhlou pokladu');
+  await page.locator('.key-in').first().waitFor({ state: 'visible', timeout: 4000 }).catch(() => {});
+  ok((await page.locator('.key-in').count()) === 1, 'klíč je v prvním ze 3 zámků');
+  await sleep(1500);
+  await page.screenshot({ path: `${OUT}/18c-treasure-fresh.png` });
+  await page.getByRole('button', { name: 'Zavřít' }).click();
   await page.screenshot({ path: `${OUT}/18-doghouse-done.png` });
   ok(!(await page.getByRole('button', { name: 'Další úkol' }).count()), 'po všech misích už „Další úkol“ není');
 
@@ -334,6 +348,16 @@ async function ipadFlow() {
   ok((await snap(page)).selectedCharacter === 'lauriska', 'ťuknutí na Lauru ve světě ji vybere');
   await page.getByRole('button', { name: 'Laura' }).click();
   ok((await snap(page)).selectedCharacter === null, 'druhé ťuknutí výběr zruší');
+
+  // --- Ondra a Laura se potkají: Laura dojde k Ondrovi na nádvoří
+  await page.getByRole('button', { name: 'Laura' }).click();
+  ok(await tapVisible(page, { x: 11, y: 0, z: 12 }), 'místo vedle Ondry je vidět');
+  await page.waitForFunction(() => !window.__onda.controller.characters.get('lauriska').walking, null, { timeout: 60000 }).catch(() => {});
+  await sleep(300);
+  const met = await page.evaluate(() => ({ at: window.__onda.controller.lastMeetAt, l: window.__onda.controller.characters.get('lauriska').standCell }));
+  ok(met.at > 0, `Ondra a Laura se potkali – srdíčka a rozhovor (Laura ${JSON.stringify(met.l)})`);
+  await page.screenshot({ path: `${OUT}/13b-friends-meet.png` });
+  await page.getByRole('button', { name: 'Laura' }).click();
 
   // --- bedna s otazníkem: bez postavičky jen nápověda, s Laurou úkol
   const box = { x: 15, y: 1, z: 15 };

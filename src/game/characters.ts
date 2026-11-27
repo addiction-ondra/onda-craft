@@ -30,3 +30,11 @@ export function resolveCharacterPos(w: World, id: CharacterId, saved?: Vec3 | nu
       for (let z = 15; z >= 0; z--) if (isStandable(w, { x, y, z })) return { x, y, z };
   return spawn;
 }
+
+/** Stojí dvě postavičky hned vedle sebe (nebo na stejném místě)? */
+export function areNeighbors(a: Vec3, b: Vec3): boolean {
+  return Math.abs(a.x - b.x) + Math.abs(a.z - b.z) <= 1 && Math.abs(a.y - b.y) <= 1;
+}
+
+/** Krátké rozhovory, když se Ondra a Laura potkají. Střídají se repliky. */
+export type DialogLine = { who: CharacterId; text: string };

@@ -132,7 +132,8 @@ se plní), **nápovědu** (po nečinnosti nebo při jiném materiálu – nikdy 
   (počítání 1–5, barvy, tvary, písmena), ťuknutí na svítící místo položí kostku přímo tam. ✅
 - **v0.4** – režimy panáček / kladivo / Stavitel (šablony hrad, domeček, farma), prázdná louka,
   klíč k pokladu za všechny úkoly. ✅
-- **v0.5** – další světy (výběr ostrova) a poklad, který se otevírá klíči.
-- **v0.6** – mise 6 (čísla: postav věž z N kostek, hlasové počítání), mise 7 (tvary: obtáhni čtverec/obdélník/trojúhelník na zemi).
-- **v0.7** – mise 8 (písmena z kostek, začáteční hlásky), více světů / slotů pro sourozence.
+- **v0.5** – truhla se 3 zámky (klíč nahoře vždy viditelný), oslava klíče, setkání Ondry a Laury. ✅
+- **v0.6** – další světy (výběr ostrova); klíče z nich otevřou truhlu s pokladem.
+- **v0.7** – mise 6 (čísla: postav věž z N kostek, hlasové počítání), mise 7 (tvary: obtáhni čtverec/obdélník/trojúhelník na zemi).
+- **v0.8** – mise 8 (písmena z kostek, začáteční hlásky), více světů / slotů pro sourozence.
 - Průběžně: přístupnost (větší kontrast), výkon na starších iPadech, nahrané lidské hlasy jako fallback.

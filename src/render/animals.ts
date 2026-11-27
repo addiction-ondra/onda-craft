@@ -337,6 +337,13 @@ export class Animal {
     this.group.add(this.bubble);
   }
 
+  /** Otočí se čelem k místu (např. ke kamarádovi). */
+  faceTowards(p: Vec3): void {
+    const dx = p.x - this.cell.x;
+    const dz = p.z - this.cell.z;
+    if (dx || dz) this.heading = Math.atan2(dx, dz);
+  }
+
   /** Chvíli zůstane na místě (např. pejsek v novém domečku). */
   rest(seconds: number): void {
     this.wait = seconds;

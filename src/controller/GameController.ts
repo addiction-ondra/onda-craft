@@ -35,10 +35,10 @@ import {
 import { CS } from '../i18n/cs';
 import { SceneView } from '../render/SceneView';
 import type { Animal, AnimalKind } from '../render/animals';
-import { CHARACTER_IDS, resolveCharacterPos, type CharacterId, type CharacterState } from '../game/characters';
+import { areNeighbors, CHARACTER_IDS, resolveCharacterPos, type CharacterId, type CharacterState } from '../game/characters';
 import { dropToStand, findPath, reachableCells, walkGoalFromTap, type PathResult } from '../game/pathfinding';
 import { generateQuiz, isCorrect, type Quiz } from '../game/quiz';
-import { awardKey } from '../game/rewards';
+import { awardKey, missionsLeft, WORLD_ID } from '../game/rewards';
 import { absoluteParts, findTemplateSpot, TEMPLATES, templateBlockAt, templateStatus, type TemplateId } from '../game/templates';
 import type { ActiveTemplate } from '../game/storage';
 
@@ -52,6 +52,7 @@ export type Overlay =
   | { kind: 'success'; mission: MissionId; keyAwarded?: boolean }
   | { kind: 'architect'; noRoom?: TemplateId }
   | { kind: 'meadowConfirm' }
+  | { kind: 'treasure'; fresh: boolean }
   | { kind: 'templateDone'; template: TemplateId }
   | { kind: 'missions' }
   | { kind: 'parents' }
@@ -84,6 +85,8 @@ export interface UiSnapshot {
 const SAVE_DEBOUNCE_MS = 400;
 /** Za jak dlouho po vyřešení úkolu se objeví nová bedna. */
 const BOX_RESPAWN_MS = 30_000;
+/** Jak často si Ondra a Laura můžou povídat. */
+const MEET_COOLDOWN_MS = 40_000;
 const pickOne = <T>(a: T[]): T => a[Math.floor(Math.random() * a.length)];
 
 export class GameController {
@@ -114,6 +117,8 @@ export class GameController {
   private recentBoxes: Vec3[] = [];
   /** Kdy se má objevit další bedna (null = nic nečeká). */
   private nextBoxAt: number | null = null;
+  /** Kdy se Ondra a Laura naposledy potkali (aby si nepovídali pořád dokola). */
+  lastMeetAt = 0;
   private savedCharacters: CharacterState[];
 
   constructor() {
@@ -361,10 +366,20 @@ export class GameController {
     this.saveNow();
   }
 
-  /** Ťuknutí na klíč v liště. */
+  /** Ťuknutí na klíč v liště: ukáže truhlu se třemi zámky. */
   tapKeys(): void {
-    this.sfx.play('collect');
-    this.say(CS.voice.keyInfo);
+    this.openTreasure(false);
+  }
+
+  /** Truhla s pokladem. `fresh` = právě získaný klíč (oslava). */
+  openTreasure(fresh: boolean): void {
+    this.markActivity();
+    this.sfx.play(fresh ? 'success' : 'collect');
+    this.set({ overlay: { kind: 'treasure', fresh } });
+    const t = CS.treasure;
+    if (fresh) this.say(t.fresh);
+    else if (this.snapshot.keys.includes(WORLD_ID)) this.say(t.done);
+    else this.say(t.notDone(t.left[missionsLeft(this.snapshot.completed)] ?? ''));
   }
 
   // --------------------------------------------------------------- ovládání
@@ -418,6 +433,12 @@ export class GameController {
       this.set({ playMode: 'walk' });
       this.nudgeCharacters();
       this.view?.resetView();
+    }
+    if (o?.kind === 'success' && o.keyAwarded) {
+      // po poslední misi: oslava s truhlou pokladu a klíčem
+      this.view?.resetView();
+      this.openTreasure(true);
+      return;
     }
     if (o?.kind === 'success') {
       this.say(CS.voice.freeBuild);
@@ -742,6 +763,8 @@ export class GameController {
       const nearBox = adjacentQuestionBox(this.world, here);
       if (nearBox && !this.snapshot.overlay) {
         this.openQuiz(nearBox);
+      } else if (this.meetFriends()) {
+        // Ondra a Laura se potkali – srdíčka, výskok a rozhovor
       } else if (!wasInCastle && isInCastle(here)) {
         this.sfx.play('collect');
         this.say(CS.voice.inCastle);
@@ -749,6 +772,30 @@ export class GameController {
       this.scheduleSave();
     });
     // V režimu chození zůstává postavička vybraná – dítě s ní může chodit dál.
+  }
+
+  /** Když stojí Ondra a Laura vedle sebe: srdíčka v bublinách, společný výskok a krátký rozhovor. */
+  private meetFriends(): boolean {
+    const o = this.characters.get('ondra');
+    const l = this.characters.get('lauriska');
+    if (!o || !l || o.walking || l.walking || this.snapshot.overlay) return false;
+    if (!areNeighbors(o.standCell, l.standCell)) return false;
+    if (Date.now() - this.lastMeetAt < MEET_COOLDOWN_MS) return false;
+    this.lastMeetAt = Date.now();
+    o.faceTowards(l.standCell);
+    l.faceTowards(o.standCell);
+    for (const a of [o, l]) {
+      a.setBubble('heart', 6);
+      a.poke();
+    }
+    window.setTimeout(() => [o, l].forEach((a) => a.poke()), 1600);
+    this.sfx.play('collect');
+    const dialog = pickOne(CS.meet);
+    dialog.forEach((line, i) =>
+      // Ondra má hlas o kousek hlubší, Laura vyšší; repliky jdou po sobě (fronta).
+      this.speech.say(line.text, { interrupt: i === 0, pitch: line.who === 'ondra' ? 1.0 : 1.45 }),
+    );
+    return true;
   }
 
   // ------------------------------------------------------------- bedny s otazníkem
@@ -914,7 +961,7 @@ export class GameController {
       this.successShown = true;
       this.sfx.play('success');
       this.set({ overlay: { kind: 'success', mission: id, keyAwarded: award.awarded }, mission: null });
-      if (speak || award.awarded) this.say(`${speak ? texts[id].success : ''} ${award.awarded ? CS.voice.keyAwarded : ''}`.trim());
+      if (speak) this.say(texts[id].success);
     };
     if (id === 'doghouse') {
       // Frený nejdřív sám doběhne do nového domečku, pak teprve oslava.

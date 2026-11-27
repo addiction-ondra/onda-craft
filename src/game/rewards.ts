@@ -15,3 +15,9 @@ export function awardKey(keys: KeyId[], completed: MissionId[], worldId: string 
   if (!allMissionsDone(completed) || keys.includes(worldId)) return { keys, awarded: false };
   return { keys: [...keys, worldId], awarded: true };
 }
+
+/** Kolik zámků má truhla s pokladem (jeden klíč za každý svět). */
+export const TREASURE_LOCKS = 3;
+
+/** Kolik úkolů v tomto světě ještě zbývá do klíče. */
+export const missionsLeft = (completed: MissionId[]): number => MISSIONS.filter((m) => !completed.includes(m.id)).length;

@@ -52,7 +52,7 @@ export class Speech {
   private current: SpeechSynthesisUtterance | null = null;
 
   /** Řekne větu. Předchozí nedořečenou větu přeruší (dítě nečeká na frontu). */
-  say(text: string, opts: { interrupt?: boolean } = {}): void {
+  say(text: string, opts: { interrupt?: boolean; pitch?: number } = {}): void {
     if (!this.enabled || !this.synth || !text) return;
     try {
       if (!this.voice) this.pickVoice();
@@ -63,7 +63,7 @@ export class Speech {
       u.lang = 'cs-CZ';
       if (this.voice) u.voice = this.voice;
       u.rate = this.rate;
-      u.pitch = 1.1;
+      u.pitch = opts.pitch ?? 1.1;
       u.volume = 1;
       u.onend = u.onerror = () => {
         if (this.current === u) this.current = null;

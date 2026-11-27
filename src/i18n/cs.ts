@@ -120,6 +120,37 @@ export const CS = {
     },
   } satisfies Record<MissionId, { title: string; intro: string; hint: string; success: string } & Record<string, unknown>>,
 
+  treasure: {
+    fresh: 'Hurá! Splnil jsi všechny úkoly a získal jsi klíč k pokladu! Truhla s pokladem má tři zámky. První klíč už je v zámku!',
+    done: 'Klíč z tohoto světa už máš! Jdi objevit další svět a získej další klíč.',
+    notDone: (left: string) => `Truhla s pokladem má tři zámky. Klíč dostaneš, když splníš všechny úkoly. Zbývá ti ještě ${left}. Ťukni na vlajku a pusť se do toho!`,
+    left: ['', 'jeden úkol', 'dva úkoly', 'tři úkoly', 'čtyři úkoly', 'pět úkolů', 'šest úkolů'],
+  },
+
+  /** Když se Ondra a Laura potkají – srdíčka, výskok a krátký rozhovor. */
+  meet: [
+    [
+      { who: 'ondra', text: 'Ahoj Lauro! Jak se dneska máš?' },
+      { who: 'lauriska', text: 'Ahoj Ondro! Mám se moc dobře. A ty?' },
+      { who: 'ondra', text: 'Já taky! Pojď si spolu hrát!' },
+    ],
+    [
+      { who: 'lauriska', text: 'Ahoj Ondro! Co dneska stavíš?' },
+      { who: 'ondra', text: 'Stavím hrad! Pomůžeš mi?' },
+      { who: 'lauriska', text: 'Jasně! Spolu to půjde líp.' },
+    ],
+    [
+      { who: 'ondra', text: 'Lauro, viděla jsi Freného?' },
+      { who: 'lauriska', text: 'Viděla! Běhal u řeky.' },
+      { who: 'ondra', text: 'Tak pojďme za ním!' },
+    ],
+    [
+      { who: 'lauriska', text: 'Ondro! Jsem ráda, že tě vidím.' },
+      { who: 'ondra', text: 'Já tebe taky, Lauro! Dáme si závod?' },
+      { who: 'lauriska', text: 'Jo! Raz, dva, tři, běžíme!' },
+    ],
+  ] as Array<Array<{ who: 'ondra' | 'lauriska'; text: string }>>,
+
   builder: {
     menu: 'Stavitel! Co postavíme? Hrad, domeček, nebo farmu?',
     names: { castle: 'Hrad', house: 'Domeček', farm: 'Farma s ohradou' },
@@ -205,6 +236,8 @@ export const CS = {
     build: 'Stavění z kostek',
     builder: 'Stavitel',
     keys: 'Klíče k pokladu',
+    treasure: 'Truhla s pokladem',
+    toMissions: 'Jdi na úkoly',
     confirmReset: 'Opravdu smazat stavbu a začít s novým světem?',
     confirmMissions: 'Opravdu vynulovat hvězdičky u úkolů?',
     yes: 'Ano',

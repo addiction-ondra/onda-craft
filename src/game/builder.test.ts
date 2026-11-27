@@ -97,3 +97,19 @@ describe('klíč k pokladu', () => {
     expect(l.completed).toEqual(['wood5']);
   });
 });
+
+describe('truhla a kamarádi', () => {
+  it('počítá zbývající úkoly do klíče', async () => {
+    const { missionsLeft } = await import('./rewards');
+    expect(missionsLeft([])).toBe(5);
+    expect(missionsLeft(['wood5', 'bridge'])).toBe(3);
+    expect(missionsLeft(['wood5', 'findRed', 'bridge', 'feed', 'doghouse'])).toBe(0);
+  });
+
+  it('Ondra a Laura se potkají, když stojí vedle sebe', async () => {
+    const { areNeighbors } = await import('./characters');
+    expect(areNeighbors({ x: 3, y: 1, z: 3 }, { x: 4, y: 1, z: 3 })).toBe(true);
+    expect(areNeighbors({ x: 3, y: 1, z: 3 }, { x: 4, y: 1, z: 4 })).toBe(false);
+    expect(areNeighbors({ x: 3, y: 1, z: 3 }, { x: 3, y: 4, z: 4 })).toBe(false);
+  });
+});

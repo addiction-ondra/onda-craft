@@ -11,6 +11,11 @@ ovečkou a kuřátkem. Ovládání dotykem, minimum textu, české hlasové poky
 
 Architektura a roadmapa: [PLAN.md](PLAN.md) · pravidla vývoje: [CLAUDE.md](CLAUDE.md)
 
+## Co umí verze 0.6.2
+
+- Když Ondra nebo Laura dojde k Frenému: nad dítětem ikonka pejska, dítě řekne
+  „Frený, hudlánka!“ a pak se objeví srdíčko nad dítětem i nad Freným (Frený poskočí).
+
 ## Co umí verze 0.6.1
 
 - Klíč nahoře je šedý, dokud nejsou splněné všechny úkoly; truhla má pak 3 prázdné zámky.

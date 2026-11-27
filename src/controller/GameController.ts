@@ -118,6 +118,8 @@ export class GameController {
   private nextBoxAt: number | null = null;
   /** Kdy se Ondra a Laura naposledy potkali (aby si nepovídali pořád dokola). */
   lastMeetAt = 0;
+  /** Kdy naposledy dítě pohladilo Freného (pro testy). */
+  lastPetAt = 0;
   /** Poslední rozhovory Ondry a Laury – aby byl pokaždé jiný. */
   private recentDialogs: number[] = [];
   /** Otisky posledních úkolů z beden – aby se neopakovaly. */
@@ -792,6 +794,8 @@ export class GameController {
     // Setkání jen když postavička k druhé opravdu přišla (předtím stály od sebe).
     const friend = this.characters.get(id === 'ondra' ? 'lauriska' : 'ondra');
     const wasNearFriend = !!friend && areNeighbors(start, friend.standCell);
+    const dogAtStart = this.animals.get('dog');
+    const wasNearDog = !!dogAtStart && areNeighbors(start, dogAtStart.standCell);
     this.view.effects.setWalkTarget(end);
     this.sfx.play('click');
     this.say(reached ? pickOne(CS.voice.walk) : CS.voice.cantReach);
@@ -803,6 +807,8 @@ export class GameController {
         this.openQuiz(nearBox);
       } else if (!wasNearFriend && this.meetFriends()) {
         // Ondra a Laura se potkali – srdíčka, výskok a rozhovor
+      } else if (!wasNearDog && this.petDog(id, a)) {
+        // dítě přišlo k Frenému – „Frený, hudlánka!“ a srdíčka
       } else if (!wasInCastle && isInCastle(here)) {
         this.sfx.play('collect');
         this.say(CS.voice.inCastle);
@@ -847,6 +853,37 @@ export class GameController {
     // na konci rozhovoru ještě jednou srdíčka
     lines.push({ text: '', pitch: 1, onStart: () => [o, l].forEach((a) => a.setBubble('heart', 2.5)) });
     window.setTimeout(() => this.speech.sayLines(lines), 700);
+    return true;
+  }
+
+  /**
+   * Dítě přišlo k Frenému: nad dítětem ikonka pejska, dítě řekne „Frený, hudlánka!“,
+   * pak srdíčko nad dítětem i nad Freným a Frený radostí poskočí.
+   */
+  private petDog(id: CharacterId, child: Animal): boolean {
+    const dog = this.animals.get('dog');
+    if (!dog || dog.walking || this.snapshot.overlay) return false;
+    if (!areNeighbors(child.standCell, dog.standCell)) return false;
+    child.faceTowards(dog.standCell);
+    dog.faceTowards(child.standCell);
+    dog.rest(8); // Frený chvíli zůstane a nechá se pohladit
+    this.lastPetAt = Date.now();
+    this.speech.sayLines([
+      {
+        text: CS.voice.petDog,
+        pitch: id === 'ondra' ? 1.0 : 1.45,
+        onStart: () => child.setBubble('dog', 2.5),
+      },
+      {
+        text: '',
+        onStart: () => {
+          child.setBubble('heart', 3);
+          dog.setBubble('heart', 3);
+          dog.poke();
+          this.sfx.play('animal');
+        },
+      },
+    ]);
     return true;
   }
 

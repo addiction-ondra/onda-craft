@@ -6,7 +6,7 @@ import type { BlockType } from '../game/blocks';
 import { blockCanvases } from './textures';
 
 /** Bublina nad zvířátkem: obrázek jídla, které chce, nebo srdíčko po nakrmení. */
-export type Bubble = { food: BlockType } | 'heart' | 'talk' | null;
+export type Bubble = { food: BlockType } | 'heart' | 'talk' | 'dog' | null;
 
 const bubbleCache = new Map<string, THREE.SpriteMaterial>();
 function bubbleMaterial(b: Exclude<Bubble, null>): THREE.SpriteMaterial {
@@ -28,7 +28,40 @@ function bubbleMaterial(b: Exclude<Bubble, null>): THREE.SpriteMaterial {
   g.arc(56, 112, 8, 0, Math.PI * 2);
   g.fill();
   g.stroke();
-  if (b === 'talk') {
+  if (b === 'dog') {
+    // obličej pejska Freného (bílý buldoček s hnědým čumákem)
+    g.fillStyle = '#ffffff';
+    g.strokeStyle = '#495057';
+    g.lineWidth = 3;
+    for (const s of [-1, 1]) {
+      g.beginPath(); // netopýří uši
+      g.moveTo(64 + s * 14, 40);
+      g.lineTo(64 + s * 30, 20);
+      g.lineTo(64 + s * 32, 46);
+      g.closePath();
+      g.fill();
+      g.stroke();
+    }
+    g.beginPath();
+    g.arc(64, 58, 24, 0, Math.PI * 2);
+    g.fill();
+    g.stroke();
+    g.fillStyle = '#8d5524'; // hnědý čumák a flíček u oka
+    g.beginPath();
+    g.ellipse(64, 68, 13, 9, 0, 0, Math.PI * 2);
+    g.fill();
+    g.beginPath();
+    g.arc(74, 50, 7, 0, Math.PI * 2);
+    g.fill();
+    g.fillStyle = '#1b1b1b';
+    g.beginPath();
+    g.arc(55, 51, 3.5, 0, Math.PI * 2);
+    g.arc(74, 51, 3.5, 0, Math.PI * 2);
+    g.fill();
+    g.beginPath();
+    g.ellipse(64, 64, 5, 3.5, 0, 0, Math.PI * 2);
+    g.fill();
+  } else if (b === 'talk') {
     // „mluví“: tři tečky
     g.fillStyle = '#495057';
     for (const x of [40, 64, 88]) {

@@ -53,6 +53,7 @@ export const CS = {
     walk: ['Jdu tam!', 'Už běžím!', 'Hned tam budu!', 'Jdeme na to!'],
     cantReach: 'Tam nedojdu. Postav mi schody nebo most!',
     inCastle: 'Hurá, jsem na hradě!',
+    petDog: 'Frený, hudlánka!',
     chooseFriend: 'Ahoj! Vyber si dole Ondru nebo Lauru a pojď se projít po světě.',
     walkMode: 'Chození. Vyber si kamaráda a ťukni, kam má jít.',
     pickFirst: 'Nejdřív si vyber, kdo půjde. Ťukni dole na Ondru nebo Lauru.',

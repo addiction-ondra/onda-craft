@@ -559,9 +559,33 @@ async function iphoneFlow() {
   await ctx.close();
 }
 
+/** Mapa světů na iPhonu se ZAPNUTÝMI animacemi (CSS animace nesmí posunout ostrovy). */
+async function iphoneMapAnimated() {
+  console.log('\niPhone (animace zapnuté):');
+  const ctx = await browser.newContext({ ...devices['iPhone 13'] });
+  const page = await ctx.newPage();
+  await page.goto(`${BASE}/?test`);
+  await page.waitForFunction(() => !!window.__onda);
+  await page.getByRole('button', { name: 'Hrát' }).click({ force: true });
+  await page.evaluate(() => window.__onda.controller.openWorlds());
+  await sleep(1500);
+  const r = await page.evaluate(() => {
+    const map = document.querySelector('.worlds-map').getBoundingClientRect();
+    return [...document.querySelectorAll('.worlds-map > g[role=button]')].map((g) => {
+      const b = g.getBoundingClientRect();
+      return { inside: b.left >= map.left - 2 && b.right <= map.right + 2 && b.top >= map.top - 2 && b.bottom <= map.bottom + 2, cx: (b.left + b.width / 2 - map.left) / map.width };
+    });
+  });
+  ok(r.length === 3 && r.every((x) => x.inside), 'mapa světů: všechny 3 ostrovy jsou celé uvnitř mapy');
+  ok(r[0].cx < 0.35 && r[1].cx > 0.35 && r[1].cx < 0.65 && r[2].cx > 0.65, 'mapa světů: náš ostrov vlevo, další uprostřed a vpravo');
+  await page.screenshot({ path: `${OUT}/33-iphone-map.png` });
+  await ctx.close();
+}
+
 try {
   await ipadFlow();
   await iphoneFlow();
+  await iphoneMapAnimated();
 } catch (e) {
   failures++;
   console.error(e);

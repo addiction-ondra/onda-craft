@@ -35,7 +35,7 @@ import {
 import { CS } from '../i18n/cs';
 import { SceneView } from '../render/SceneView';
 import type { Animal, AnimalKind } from '../render/animals';
-import { areNeighbors, CHARACTER_IDS, resolveCharacterPos, type CharacterId, type CharacterState } from '../game/characters';
+import { areNeighbors, CHARACTER_IDS, pickDialogIndex, resolveCharacterPos, type CharacterId, type CharacterState } from '../game/characters';
 import { dropToStand, findPath, reachableCells, walkGoalFromTap, type PathResult } from '../game/pathfinding';
 import { generateFreshQuiz, isCorrect, quizKey, type Quiz } from '../game/quiz';
 import { awardKey, missionsLeft, WORLD_ID } from '../game/rewards';
@@ -85,8 +85,6 @@ export interface UiSnapshot {
 const SAVE_DEBOUNCE_MS = 400;
 /** Za jak dlouho po vyřešení úkolu se objeví nová bedna. */
 const BOX_RESPAWN_MS = 30_000;
-/** Jak často si Ondra a Laura můžou povídat. */
-const MEET_COOLDOWN_MS = 40_000;
 const pickOne = <T>(a: T[]): T => a[Math.floor(Math.random() * a.length)];
 
 export class GameController {
@@ -119,6 +117,8 @@ export class GameController {
   private nextBoxAt: number | null = null;
   /** Kdy se Ondra a Laura naposledy potkali (aby si nepovídali pořád dokola). */
   lastMeetAt = 0;
+  /** Poslední rozhovory Ondry a Laury – aby byl pokaždé jiný. */
+  private recentDialogs: number[] = [];
   /** Otisky posledních úkolů z beden – aby se neopakovaly. */
   private recentQuizzes: string[] = [];
   private savedCharacters: CharacterState[];
@@ -761,6 +761,9 @@ export class GameController {
     const { path, reached } = result;
     const end = path.length ? path[path.length - 1] : start;
     const wasInCastle = isInCastle(start);
+    // Setkání jen když postavička k druhé opravdu přišla (předtím stály od sebe).
+    const friend = this.characters.get(id === 'ondra' ? 'lauriska' : 'ondra');
+    const wasNearFriend = !!friend && areNeighbors(start, friend.standCell);
     this.view.effects.setWalkTarget(end);
     this.sfx.play('click');
     this.say(reached ? pickOne(CS.voice.walk) : CS.voice.cantReach);
@@ -770,7 +773,7 @@ export class GameController {
       const nearBox = adjacentQuestionBox(this.world, here);
       if (nearBox && !this.snapshot.overlay) {
         this.openQuiz(nearBox);
-      } else if (this.meetFriends()) {
+      } else if (!wasNearFriend && this.meetFriends()) {
         // Ondra a Laura se potkali – srdíčka, výskok a rozhovor
       } else if (!wasInCastle && isInCastle(here)) {
         this.sfx.play('collect');
@@ -781,27 +784,41 @@ export class GameController {
     // V režimu chození zůstává postavička vybraná – dítě s ní může chodit dál.
   }
 
-  /** Když stojí Ondra a Laura vedle sebe: srdíčka v bublinách, společný výskok a krátký rozhovor. */
+  /**
+   * Ondra a Laura se potkali (jeden právě došel k druhému): srdíčka, společný výskok,
+   * otočí se k sobě a krátký rozhovor – pokaždé jiný. Bublina s tečkami ukazuje, kdo mluví.
+   */
   private meetFriends(): boolean {
     const o = this.characters.get('ondra');
     const l = this.characters.get('lauriska');
     if (!o || !l || o.walking || l.walking || this.snapshot.overlay) return false;
     if (!areNeighbors(o.standCell, l.standCell)) return false;
-    if (Date.now() - this.lastMeetAt < MEET_COOLDOWN_MS) return false;
     this.lastMeetAt = Date.now();
     o.faceTowards(l.standCell);
     l.faceTowards(o.standCell);
     for (const a of [o, l]) {
-      a.setBubble('heart', 6);
+      a.setBubble('heart', 2.2);
       a.poke();
     }
     window.setTimeout(() => [o, l].forEach((a) => a.poke()), 1600);
     this.sfx.play('collect');
-    const dialog = pickOne(CS.meet);
-    dialog.forEach((line, i) =>
-      // Ondra má hlas o kousek hlubší, Laura vyšší; repliky jdou po sobě (fronta).
-      this.speech.say(line.text, { interrupt: i === 0, pitch: line.who === 'ondra' ? 1.0 : 1.45 }),
-    );
+    const idx = pickDialogIndex(CS.meet.length, this.recentDialogs);
+    this.recentDialogs = [...this.recentDialogs, idx].slice(-4);
+    const who = { ondra: o, lauriska: l };
+    const lines = CS.meet[idx].map((line, i) => ({
+      text: line.text,
+      // Ondra má hlas o kousek hlubší, Laura vyšší.
+      pitch: line.who === 'ondra' ? 1.0 : 1.45,
+      onStart: () => {
+        const speaker = who[line.who];
+        const other = line.who === 'ondra' ? l : o;
+        speaker.setBubble('talk', 1 + line.text.length * 0.08);
+        if (i > 0) other.setBubble(null);
+      },
+    }));
+    // na konci rozhovoru ještě jednou srdíčka
+    lines.push({ text: '', pitch: 1, onStart: () => [o, l].forEach((a) => a.setBubble('heart', 2.5)) });
+    window.setTimeout(() => this.speech.sayLines(lines), 700);
     return true;
   }
 

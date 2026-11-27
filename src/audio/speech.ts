@@ -50,32 +50,106 @@ export class Speech {
 
   /** iOS zahodí promluvu, na kterou nevede žádný odkaz – držíme ji, dokud nedomluví. */
   private current: SpeechSynthesisUtterance | null = null;
+  /** Rozhovor: repliky se říkají postupně, další až po skončení předchozí. */
+  private dialog: Array<{ text: string; pitch?: number; onStart?: () => void }> = [];
+  private dialogTimer: number | undefined;
+  private dialogToken = 0;
 
-  /** Řekne větu. Předchozí nedořečenou větu přeruší (dítě nečeká na frontu). */
+  private makeUtterance(text: string, pitch?: number): SpeechSynthesisUtterance {
+    if (!this.voice) this.pickVoice();
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = 'cs-CZ';
+    if (this.voice) u.voice = this.voice;
+    u.rate = this.rate;
+    u.pitch = pitch ?? 1.1;
+    u.volume = 1;
+    return u;
+  }
+
+  /** Řekne větu. Předchozí nedořečenou větu (i rozhovor) přeruší – dítě nečeká na frontu. */
   say(text: string, opts: { interrupt?: boolean; pitch?: number } = {}): void {
     if (!this.enabled || !this.synth || !text) return;
+    if (opts.interrupt !== false) this.cancelDialog();
     try {
-      if (!this.voice) this.pickVoice();
-      // cancel() jen když opravdu něco mluví – na iOS jinak spolkne i novou větu.
-      if (opts.interrupt !== false && (this.synth.speaking || this.synth.pending)) this.synth.cancel();
-      if (this.synth.paused) this.synth.resume();
-      const u = new SpeechSynthesisUtterance(text);
-      u.lang = 'cs-CZ';
-      if (this.voice) u.voice = this.voice;
-      u.rate = this.rate;
-      u.pitch = opts.pitch ?? 1.1;
-      u.volume = 1;
-      u.onend = u.onerror = () => {
-        if (this.current === u) this.current = null;
-      };
-      this.current = u;
-      this.synth.speak(u);
+      const busy = this.synth.speaking || this.synth.pending;
+      if (opts.interrupt !== false && busy) {
+        // iOS Safari po cancel() spolkne větu řečenou ve stejném okamžiku – chvilku počkáme.
+        this.synth.cancel();
+        const token = this.dialogToken;
+        window.setTimeout(() => token === this.dialogToken && this.speakNow(text, opts.pitch), 120);
+        return;
+      }
+      this.speakNow(text, opts.pitch);
     } catch {
       /* hlas je jen bonus – hra funguje i bez něj */
     }
   }
 
+  private speakNow(text: string, pitch?: number, onEnd?: () => void): void {
+    if (!this.synth) return;
+    try {
+      if (this.synth.paused) this.synth.resume();
+      const u = this.makeUtterance(text, pitch);
+      u.onend = u.onerror = () => {
+        if (this.current === u) this.current = null;
+        onEnd?.();
+      };
+      this.current = u;
+      this.synth.speak(u);
+    } catch {
+      onEnd?.();
+    }
+  }
+
+  /**
+   * Rozhovor (např. Ondra a Laura). Repliky jdou po sobě, `onStart` se zavolá
+   * na začátku každé (bublina nad tím, kdo mluví). Funguje i s vypnutým hlasem –
+   * pak repliky „běží“ podle odhadu délky, aby bubliny dál ukazovaly, kdo mluví.
+   */
+  sayLines(lines: Array<{ text: string; pitch?: number; onStart?: () => void }>): void {
+    this.cancelDialog();
+    const token = ++this.dialogToken;
+    this.dialog = [...lines];
+    if (this.synth && (this.synth.speaking || this.synth.pending)) this.synth.cancel();
+    // malá pauza – iOS po cancel() potřebuje chvilku
+    this.dialogTimer = window.setTimeout(() => this.nextLine(token), 150);
+  }
+
+  private nextLine(token: number): void {
+    if (token !== this.dialogToken) return;
+    const line = this.dialog.shift();
+    if (!line) return;
+    line.onStart?.();
+    if (!line.text) {
+      // jen vizuální krok (např. srdíčka na konci), nic se neříká
+      this.dialogTimer = window.setTimeout(() => this.nextLine(token), 50);
+      return;
+    }
+    // Pojistka: když iOS konec věty neohlásí, pokračujeme podle odhadu délky.
+    const estimate = 900 + line.text.length * 75;
+    let done = false;
+    const next = () => {
+      if (done || token !== this.dialogToken) return;
+      done = true;
+      window.clearTimeout(this.dialogTimer);
+      this.dialogTimer = window.setTimeout(() => this.nextLine(token), 350);
+    };
+    if (this.enabled && this.synth) {
+      this.speakNow(line.text, line.pitch, next);
+      this.dialogTimer = window.setTimeout(next, estimate + 2500);
+    } else {
+      this.dialogTimer = window.setTimeout(next, estimate);
+    }
+  }
+
+  private cancelDialog(): void {
+    this.dialogToken++;
+    this.dialog = [];
+    window.clearTimeout(this.dialogTimer);
+  }
+
   stop(): void {
+    this.cancelDialog();
     this.synth?.cancel();
   }
 }

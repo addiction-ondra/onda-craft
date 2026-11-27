@@ -11,6 +11,12 @@ ovečkou a kuřátkem. Ovládání dotykem, minimum textu, české hlasové poky
 
 Architektura a roadmapa: [PLAN.md](PLAN.md) · pravidla vývoje: [CLAUDE.md](CLAUDE.md)
 
+## Co umí verze 0.5.2
+
+- Ondra a Laura se potkají **pokaždé**, když jeden dojde k druhému: srdíčka, výskok
+  a rozhovor – 10 variant, nikdy stejný jako poslední 4. Repliky jdou po sobě
+  (vlastní fronta, spolehlivá i v Safari na iPadu), nad mluvícím je bublina s tečkami.
+
 ## Co umí verze 0.5.1
 
 - Bedny s otazníkem jsou ve světě **vždy** (i na prázdné louce, hned po vyčištění).

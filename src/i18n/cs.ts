@@ -149,6 +149,36 @@ export const CS = {
       { who: 'ondra', text: 'Já tebe taky, Lauro! Dáme si závod?' },
       { who: 'lauriska', text: 'Jo! Raz, dva, tři, běžíme!' },
     ],
+    [
+      { who: 'ondra', text: 'Lauro, jakou máš ráda barvu?' },
+      { who: 'lauriska', text: 'Růžovou! A ty, Ondro?' },
+      { who: 'ondra', text: 'Já mám rád modrou. Jako řeka!' },
+    ],
+    [
+      { who: 'lauriska', text: 'Ondro, víš, kolik je tu stromů?' },
+      { who: 'ondra', text: 'Spočítáme je spolu! Jedna, dva, tři…' },
+      { who: 'lauriska', text: 'To je spousta stromů!' },
+    ],
+    [
+      { who: 'ondra', text: 'Ahoj Lauro! Mám hlad.' },
+      { who: 'lauriska', text: 'Já taky! Co si dáme?' },
+      { who: 'ondra', text: 'Jablíčko! Mňam!' },
+    ],
+    [
+      { who: 'lauriska', text: 'Ondro, slyšíš to? Bééé!' },
+      { who: 'ondra', text: 'To je ovečka! Jde nás pozdravit.' },
+      { who: 'lauriska', text: 'Ahoj ovečko!' },
+    ],
+    [
+      { who: 'ondra', text: 'Lauro, našla jsi bednu s otazníkem?' },
+      { who: 'lauriska', text: 'Ještě ne. Pomůžeš mi ji najít?' },
+      { who: 'ondra', text: 'Jasně! Hledáme spolu!' },
+    ],
+    [
+      { who: 'lauriska', text: 'Ondro, dneska je krásný den.' },
+      { who: 'ondra', text: 'To je! Svítí sluníčko.' },
+      { who: 'lauriska', text: 'Pojďme se projít k hradu!' },
+    ],
   ] as Array<Array<{ who: 'ondra' | 'lauriska'; text: string }>>,
 
   builder: {

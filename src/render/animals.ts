@@ -6,11 +6,11 @@ import type { BlockType } from '../game/blocks';
 import { blockCanvases } from './textures';
 
 /** Bublina nad zvířátkem: obrázek jídla, které chce, nebo srdíčko po nakrmení. */
-export type Bubble = { food: BlockType } | 'heart' | null;
+export type Bubble = { food: BlockType } | 'heart' | 'talk' | null;
 
 const bubbleCache = new Map<string, THREE.SpriteMaterial>();
 function bubbleMaterial(b: Exclude<Bubble, null>): THREE.SpriteMaterial {
-  const key = b === 'heart' ? 'heart' : b.food;
+  const key = typeof b === 'string' ? b : b.food;
   let m = bubbleCache.get(key);
   if (m) return m;
   const c = document.createElement('canvas');
@@ -28,7 +28,15 @@ function bubbleMaterial(b: Exclude<Bubble, null>): THREE.SpriteMaterial {
   g.arc(56, 112, 8, 0, Math.PI * 2);
   g.fill();
   g.stroke();
-  if (b === 'heart') {
+  if (b === 'talk') {
+    // „mluví“: tři tečky
+    g.fillStyle = '#495057';
+    for (const x of [40, 64, 88]) {
+      g.beginPath();
+      g.arc(x, 56, 9, 0, Math.PI * 2);
+      g.fill();
+    }
+  } else if (b === 'heart') {
     g.fillStyle = '#ff4d6d';
     g.beginPath();
     g.moveTo(64, 84);

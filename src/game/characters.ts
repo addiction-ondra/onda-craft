@@ -38,3 +38,10 @@ export function areNeighbors(a: Vec3, b: Vec3): boolean {
 
 /** Krátké rozhovory, když se Ondra a Laura potkají. Střídají se repliky. */
 export type DialogLine = { who: CharacterId; text: string };
+
+/** Vybere rozhovor, který nebyl mezi posledními `recent` (indexy). */
+export function pickDialogIndex(total: number, recent: number[], rng: () => number = Math.random): number {
+  const fresh = Array.from({ length: total }, (_, i) => i).filter((i) => !recent.includes(i));
+  const pool = fresh.length ? fresh : Array.from({ length: total }, (_, i) => i);
+  return pool[Math.floor(rng() * pool.length)];
+}

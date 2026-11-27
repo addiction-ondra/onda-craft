@@ -113,3 +113,21 @@ describe('truhla a kamarádi', () => {
     expect(areNeighbors({ x: 3, y: 1, z: 3 }, { x: 3, y: 4, z: 4 })).toBe(false);
   });
 });
+
+describe('rozhovory Ondry a Laury', () => {
+  it('pokaždé jiný rozhovor (žádný z posledních 4)', async () => {
+    const { pickDialogIndex } = await import('./characters');
+    const { CS } = await import('../i18n/cs');
+    expect(CS.meet.length).toBeGreaterThanOrEqual(8);
+    const recent: number[] = [];
+    let s = 5;
+    const rng = () => ((s = (s * 1664525 + 1013904223) % 4294967296), s / 4294967296);
+    for (let i = 0; i < 40; i++) {
+      const idx = pickDialogIndex(CS.meet.length, recent, rng);
+      expect(recent).not.toContain(idx);
+      recent.push(idx);
+      if (recent.length > 4) recent.shift();
+    }
+    for (const d of CS.meet) for (const line of d) expect(['ondra', 'lauriska']).toContain(line.who);
+  });
+});

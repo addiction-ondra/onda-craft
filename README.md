@@ -14,12 +14,12 @@ Architektura a roadmapa: [PLAN.md](PLAN.md) · pravidla vývoje: [CLAUDE.md](CLA
 ## Co umí verze 0.4.1
 
 - Bedny s otazníkem se po vyřešení úkolu objevují znovu (asi za 30 s) na jiném místě,
-  kam Ondra a Lauriska dojdou. Ve světě jsou vždy 3, i na prázdné louce.
+  kam Ondra a Laura dojdou. Ve světě jsou vždy 3, i na prázdné louce.
 
 ## Co umí verze 0.4
 
 - **Tři režimy vpravo:**
-  - 🚶 **Panáček** (výchozí): dole si vybere Ondru nebo Lauriskou a ťukáním chodí po světě.
+  - 🚶 **Panáček** (výchozí): dole si vybere Ondru nebo Lauru a ťukáním chodí po světě.
   - 🔨 **Kladivo**: stavění z kostek (paleta, kostka a guma vlevo).
   - 🏰 **Stavitel**: vybere hrad, domeček nebo farmu s ohradou; svítící kostky ukážou,
     kam stavět (po patrech zespodu), materiál se dá sám. Hotovou stavbou pak může projít.
@@ -36,7 +36,7 @@ Architektura a roadmapa: [PLAN.md](PLAN.md) · pravidla vývoje: [CLAUDE.md](CLA
 - **Mise 5 – Domeček pro Freného:** kamera sama ukáže svítící místa – 3 stěny
   a střecha. Ťuknutí na svítící místo položí kostku přesně tam. Hotový domeček
   Frený sám obsadí.
-- **Bedny s otazníkem:** pošli k bedně Ondru nebo Lauriskou a otevře se úkol –
+- **Bedny s otazníkem:** pošli k bedně Ondru nebo Lauru a otevře se úkol –
   počítání do 5, barvy, tvary nebo písmena (O jako Ondra). Hlas úkol přečte,
   odpovědi jsou obrázky. Chyba = „zkus znovu“, po dvou pokusech se správná
   odpověď rozsvítí.
@@ -45,7 +45,7 @@ Architektura a roadmapa: [PLAN.md](PLAN.md) · pravidla vývoje: [CLAUDE.md](CLA
 ## Co umí verze 0.2
 
 - **Hrad** s věžemi, hradbami a bránou – postavičky do něj můžou dojít.
-- **Postavičky Ondra a Lauriska:** ťukni na postavičku (nebo na její obličej
+- **Postavičky Ondra a Laura:** ťukni na postavičku (nebo na její obličej
   vpravo nahoře), pak ťukni kamkoli do mapy – postavička tam dojde. Přes řeku
   jen po mostě, na vysoké kostky jen po schodech.
 - **Pejsek Frený** je bílý francouzský buldoček s hnědým čumákem a flíčky.
@@ -74,7 +74,7 @@ Architektura a roadmapa: [PLAN.md](PLAN.md) · pravidla vývoje: [CLAUDE.md](CLA
 2. Dole vyber kostku, ťukni na zem nebo na jinou kostku – kostka přibude.
 3. Gumou (růžová ikona vlevo) kostky schováš. Zem zůstane vždy.
 4. Vlajka vlevo nahoře = úkoly. Hvězdička = splněný úkol.
-5. Obličej Ondry nebo Laurisky vpravo nahoře (nebo ťuknutí na postavičku) → pak ťukni, kam má jít.
+5. Obličej Ondry nebo Laury vpravo nahoře (nebo ťuknutí na postavičku) → pak ťukni, kam má jít.
 6. Ozubené kolečko vpravo nahoře = nastavení pro rodiče.
 
 ## Lokální spuštění

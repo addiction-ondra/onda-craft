@@ -40,7 +40,7 @@ src/
 │   ├── quiz.ts           úkoly z beden s otazníkem (počítání, barvy, tvary, písmena)
 │   ├── templates.ts      šablony Stavitele (hrad, domeček, farma), hledání volného místa
 │   ├── rewards.ts        klíče k pokladu (1 za svět se všemi úkoly)
-│   ├── characters.ts     postavičky Ondra a Lauriska, výchozí pozice
+│   ├── characters.ts     postavičky Ondra a Laura, výchozí pozice
 │   ├── settings.ts       rodičovské nastavení + výchozí hodnoty
 │   └── storage.ts        serializace / LocalStorage s verzí formátu
 ├── audio/
@@ -84,7 +84,7 @@ React UI ◄── subscribe/getSnapshot ◄── GameController
 - Další (nestavitelné z palety) typy: kmen, listí, voda, zeď domečku, střecha.
 - **Kamera**: tažení jedním prstem = otáčení, dvěma prsty = přiblížení, velká tlačítka ⟲ ⟳ ＋ －.
 - **Zvířátka** (buldoček Frený, ovečka, kuřátko) chodí po světě, po ťuknutí poskočí a ozvou se.
-- **Postavičky Ondra a Lauriska**: ťuknutí na postavičku (nebo její obličej nahoře) ji vybere,
+- **Postavičky Ondra a Laura**: ťuknutí na postavičku (nebo její obličej nahoře) ji vybere,
   další ťuknutí do mapy = „jdi sem“. Cesta se hledá po zemi, přes most a bránou;
   vylézt umí o 1 kostku, seskočit až ze 3. Když cíl není dosažitelný, dojde co nejblíž
   a poradí „Postav mi schody nebo most!“. Pozice se ukládají.
@@ -127,7 +127,7 @@ se plní), **nápovědu** (po nečinnosti nebo při jiném materiálu – nikdy 
 ## 7. Roadmapa
 
 - **v0.1 (MVP)** – svět 16×16, 6 materiálů, volné stavění, mise 1–3, hlas, rodičovské nastavení, autosave, PWA. ✅
-- **v0.2** – hrad, postavičky Ondra a Lauriska s chozením, buldoček Frený. ✅
+- **v0.2** – hrad, postavičky Ondra a Laura s chozením, buldoček Frený. ✅
 - **v0.3** – mise 4 (krmení zvířátek), mise 5 (domeček pro Freného), bedny s otazníkem s úkoly
   (počítání 1–5, barvy, tvary, písmena), ťuknutí na svítící místo položí kostku přímo tam. ✅
 - **v0.4** – režimy panáček / kladivo / Stavitel (šablony hrad, domeček, farma), prázdná louka,

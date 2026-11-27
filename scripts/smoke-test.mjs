@@ -329,22 +329,22 @@ async function ipadFlow() {
   ok(ondra.x === 11 && ondra.y === 1 && ondra.z === 11, `Ondra došel na nádvoří hradu (${JSON.stringify(ondra)})`);
   await page.screenshot({ path: `${OUT}/13-ondra-in-castle.png` });
 
-  // Lauriska se dá vybrat i ťuknutím přímo na ni ve světě
+  // Laura se dá vybrat i ťuknutím přímo na ni ve světě
   await tapCreature(page, 'lauriska');
-  ok((await snap(page)).selectedCharacter === 'lauriska', 'ťuknutí na Lauriskou ve světě ji vybere');
-  await page.getByRole('button', { name: 'Lauriska' }).click();
+  ok((await snap(page)).selectedCharacter === 'lauriska', 'ťuknutí na Lauru ve světě ji vybere');
+  await page.getByRole('button', { name: 'Laura' }).click();
   ok((await snap(page)).selectedCharacter === null, 'druhé ťuknutí výběr zruší');
 
-  // --- bedna s otazníkem: bez postavičky jen nápověda, s Lauriskou úkol
+  // --- bedna s otazníkem: bez postavičky jen nápověda, s Laurou úkol
   const box = { x: 15, y: 1, z: 15 };
   ok((await blockAt(page, box)) === 'question', 've světě je bedna s otazníkem');
   ok(await tapVisible(page, box), 'bedna je vidět');
   ok((await snap(page)).nudgeCharacters === true && (await blockAt(page, box)) === 'question', 'ťuknutí na bednu bez postavičky: rozblikají se postavičky, bedna zůstane');
-  await page.getByRole('button', { name: 'Lauriska' }).click();
+  await page.getByRole('button', { name: 'Laura' }).click();
   await tapVisible(page, box);
   await page.waitForFunction(() => window.__onda.controller.getSnapshot().overlay?.kind === 'quiz', null, { timeout: 30000 }).catch(() => {});
   let q = (await snap(page)).overlay;
-  ok(q?.kind === 'quiz' && q.quiz.options.length === 3, `Lauriska došla k bedně a otevřel se úkol (${q?.quiz?.kind})`);
+  ok(q?.kind === 'quiz' && q.quiz.options.length === 3, `Laura došla k bedně a otevřel se úkol (${q?.quiz?.kind})`);
   await page.screenshot({ path: `${OUT}/19-quiz.png` });
   const wrongOpts = q.quiz.options.filter((o) => o !== q.quiz.answer);
   for (const o of wrongOpts) await page.locator('.quiz-option').nth(q.quiz.options.indexOf(o)).click();

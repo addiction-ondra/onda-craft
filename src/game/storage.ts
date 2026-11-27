@@ -9,7 +9,7 @@ export const SAVE_KEY = 'ondacraft:save';
 /**
  * Verze formátu:
  * 1 – v0.1 (domeček na jihu)
- * 2 – v0.2 (hrad, postavičky Ondra a Lauriska); v1 svět se převede přes upgradeWorldToCastle
+ * 2 – v0.2 (hrad, postavičky Ondra a Laura); v1 svět se převede přes upgradeWorldToCastle
  * 3 – v0.4 (klíče k pokladu, rozestavěná šablona Stavitele); v2 data jsou kompatibilní
  */
 export const SAVE_VERSION = 3;

@@ -2,6 +2,7 @@ import { isStandable } from './pathfinding';
 import type { Vec3, World } from './world';
 
 /** Ovladatelné postavičky. */
+/** Interní id se ukládají do LocalStorage – neměnit. Zobrazovaná jména jsou v i18n/cs.ts (lauriska = „Laura“). */
 export const CHARACTER_IDS = ['ondra', 'lauriska'] as const;
 export type CharacterId = (typeof CHARACTER_IDS)[number];
 

@@ -48,18 +48,18 @@ export const CS = {
     breakTime: 'Stavíš už dlouho. Co si dát pauzu, protáhnout se a napít?',
     characters: {
       ondra: { name: 'Ondra', hello: 'Ahoj, já jsem Ondra! Ťukni, kam mám jít.' },
-      lauriska: { name: 'Lauriska', hello: 'Ahoj, já jsem Lauriska! Kam půjdeme?' },
+      lauriska: { name: 'Laura', hello: 'Ahoj, já jsem Laura! Kam půjdeme?' },
     },
     walk: ['Jdu tam!', 'Už běžím!', 'Hned tam budu!', 'Jdeme na to!'],
     cantReach: 'Tam nedojdu. Postav mi schody nebo most!',
     inCastle: 'Hurá, jsem na hradě!',
-    chooseFriend: 'Ahoj! Vyber si dole Ondru nebo Lauriskou a pojď se projít po světě.',
+    chooseFriend: 'Ahoj! Vyber si dole Ondru nebo Lauru a pojď se projít po světě.',
     walkMode: 'Chození. Vyber si kamaráda a ťukni, kam má jít.',
-    pickFirst: 'Nejdřív si vyber, kdo půjde. Ťukni dole na Ondru nebo Lauriskou.',
+    pickFirst: 'Nejdřív si vyber, kdo půjde. Ťukni dole na Ondru nebo Lauru.',
     keyInfo: 'To je klíč k pokladu! Až objevíš další světy, otevřeš s ním poklad.',
     keyAwarded: 'A tady je klíč k pokladu! Ukládám ti ho nahoru.',
-    boxNeedsFriend: 'V bedně je úkol! Ťukni na Ondru nebo Lauriskou a pošli je k bedně.',
-    boxCantErase: 'Tuhle bednu otevře jen Ondra nebo Lauriska.',
+    boxNeedsFriend: 'V bedně je úkol! Ťukni na Ondru nebo Lauru a pošli je k bedně.',
+    boxCantErase: 'Tuhle bednu otevře jen Ondra nebo Laura.',
     newBoxes: 'Ve světě jsou nové bedny s otazníkem!',
     newBox: 'Objevila se nová bedna s otazníkem! Najdeš ji?',
     animals: {
@@ -131,7 +131,7 @@ export const CS = {
     nextLayer: 'Patro je hotové! Teď další, nahoru.',
     tapGlow: 'Ťukni na svítící místo.',
     done: {
-      castle: 'Hurá! Hrad je hotový. Pošli tam Ondru nebo Lauriskou!',
+      castle: 'Hurá! Hrad je hotový. Pošli tam Ondru nebo Lauru!',
       house: 'Hurá! Domeček je hotový. Kdo v něm bude bydlet?',
       farm: 'Hurá! Farma je hotová. Zvířátka mají novou ohradu!',
     },
@@ -171,7 +171,7 @@ export const CS = {
       string
     >,
     letter: (l: string, word: string) => `Ťukni na písmeno ${l}. ${l} jako ${word}.`,
-    letterWords: { O: 'Ondra', L: 'Lauriska', F: 'Frený', M: 'máma', T: 'táta', A: 'auto', P: 'pes', K: 'kočka' } as Record<
+    letterWords: { O: 'Ondra', L: 'Laura', F: 'Frený', M: 'máma', T: 'táta', A: 'auto', P: 'pes', K: 'kočka' } as Record<
       string,
       string
     >,

@@ -323,7 +323,7 @@ export function doghouseStatus(w: World): DoghouseStatus {
 }
 
 // ---------------------------------------------------------------------------
-// Bedny s otazníkem – k bedně musí dojít Ondra nebo Lauriska, pak přijde úkol
+// Bedny s otazníkem – k bedně musí dojít Ondra nebo Laura, pak přijde úkol
 // ---------------------------------------------------------------------------
 
 /** Místa beden: u startu, na nádvoří hradu a za řekou (tam je potřeba most). */

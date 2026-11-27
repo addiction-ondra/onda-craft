@@ -189,8 +189,8 @@ function buildOndra(): Model {
   return { root: g, legs, arms, height: 1.34 };
 }
 
-/** Holčička Lauriska: dlouhé světlé vlasy s copem, růžové šatičky. */
-function buildLauriska(): Model {
+/** Holčička Laura: dlouhé světlé vlasy s copem, růžové šatičky. */
+function buildLaura(): Model {
   const g = new THREE.Group();
   const legs = [limb(0.12, 0.34, 0.13, SKIN, -0.08, 0.38, 0, '#e64980'), limb(0.12, 0.34, 0.13, SKIN, 0.08, 0.38, 0, '#e64980')];
   legs.forEach((l) => g.add(l));
@@ -229,7 +229,7 @@ function buildModel(kind: CreatureKind): Model {
     case 'ondra':
       return buildOndra();
     case 'lauriska':
-      return buildLauriska();
+      return buildLaura();
   }
 }
 

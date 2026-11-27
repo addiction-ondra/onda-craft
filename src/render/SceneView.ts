@@ -8,6 +8,7 @@ import { blockCanvases, blockMaterials } from './textures';
 export type PickResult =
   | { kind: 'block'; pos: Vec3; normal: Vec3; block: BlockType }
   | { kind: 'animal'; animal: Animal }
+  | { kind: 'ghost'; pos: Vec3 }
   | null;
 
 const CAPACITY = WORLD_W * WORLD_D * WORLD_H;
@@ -215,6 +216,21 @@ export class SceneView {
     return Math.abs(this.targetAzimuth - this.azimuth) < 1e-3 && Math.abs(this.targetZoom - this.zoom) < 1e-3;
   }
 
+  /**
+   * Natočí kameru na místo (např. na plán domečku): posune střed pohledu
+   * a otočí ze strany `azimuthDeg` (nejkratší cestou).
+   */
+  focusOn(p: Vec3, azimuthDeg: number, zoom = 1.25): void {
+    const want = THREE.MathUtils.degToRad(azimuthDeg);
+    const full = Math.PI * 2;
+    let a = want + Math.round((this.targetAzimuth - want) / full) * full;
+    if (a - this.targetAzimuth > Math.PI) a -= full;
+    if (this.targetAzimuth - a > Math.PI) a += full;
+    this.targetAzimuth = a;
+    this.center.set(THREE.MathUtils.clamp(p.x + 0.5, 0, WORLD_W), 1, THREE.MathUtils.clamp(p.z + 0.5, 0, WORLD_D));
+    this.targetZoom = THREE.MathUtils.clamp(zoom, MIN_ZOOM, MAX_ZOOM);
+  }
+
   /** Otočení o čtvrt kruhu (tlačítka). */
   rotateStep(dir: 1 | -1): void {
     this.targetAzimuth += (dir * Math.PI) / 2;
@@ -316,7 +332,16 @@ export class SceneView {
     const blockHit = blockHits.find((h) => h.instanceId !== undefined && h.face);
     const animalHit = animalHits.find((h) => h.object.userData.animal);
 
-    if (animalHit && (!blockHit || animalHit.distance <= blockHit.distance + 0.6)) {
+    // Svítící místo (nápověda) před kostkou i zvířátkem → dítě chce kostku přesně tam.
+    // Překrývají-li se svítící místa, vyhraje to, jehož střed je nejblíž místu ťuknutí.
+    const ray = this.raycaster.ray;
+    const ghostHit = this.raycaster
+      .intersectObjects(this.effects.ghostObjects(), false)
+      .sort((a, b) => ray.distanceToPoint(a.object.position) - ray.distanceToPoint(b.object.position))[0];
+    if (ghostHit && (!blockHit || ghostHit.distance < blockHit.distance) && (!animalHit || ghostHit.distance < animalHit.distance)) {
+      return { kind: 'ghost', pos: { ...(ghostHit.object.userData.ghostPos as Vec3) } };
+    }
+    if (animalHit && (!blockHit || animalHit.distance <= blockHit.distance + 0.2)) {
       return { kind: 'animal', animal: animalHit.object.userData.animal as Animal };
     }
     if (!blockHit) return null;

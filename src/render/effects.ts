@@ -72,11 +72,17 @@ export class Effects {
     for (const p of list) {
       const m = new THREE.Mesh(this.popGeo, this.ghostMat);
       m.position.set(p.x + 0.5, p.y + 0.5, p.z + 0.5);
+      m.userData.ghostPos = { x: p.x, y: p.y, z: p.z };
       const edges = new THREE.LineSegments(this.ghostEdges, this.ghostLineMat);
       edges.renderOrder = 5;
       m.add(edges);
       this.ghosts.add(m);
     }
+  }
+
+  /** Svítící místa (pro ťuknutí: kostka se položí přímo do nich). */
+  ghostObjects(): THREE.Object3D[] {
+    return this.ghosts.children;
   }
 
   /** Zlaté třpytky nad hledanými kostkami. */

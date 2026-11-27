@@ -17,6 +17,7 @@ export const CS = {
     leaves: 'listí',
     wall: 'zeď',
     roof: 'střecha',
+    question: 'bedna s otazníkem',
   } satisfies Record<BlockType, string>,
 
   /** Hlas při výběru materiálu. */
@@ -32,6 +33,7 @@ export const CS = {
     leaves: 'Listí',
     wall: 'Zeď',
     roof: 'Střecha',
+    question: 'Bedna s otazníkem',
   } satisfies Record<BlockType, string>,
 
   voice: {
@@ -51,8 +53,11 @@ export const CS = {
     walk: ['Jdu tam!', 'Už běžím!', 'Hned tam budu!', 'Jdeme na to!'],
     cantReach: 'Tam nedojdu. Postav mi schody nebo most!',
     inCastle: 'Hurá, jsem na hradě!',
+    boxNeedsFriend: 'V bedně je úkol! Ťukni na Ondru nebo Lauriskou a pošli je k bedně.',
+    boxCantErase: 'Tuhle bednu otevře jen Ondra nebo Lauriska.',
+    newBoxes: 'Ve světě jsou nové bedny s otazníkem!',
     animals: {
-      dog: 'Haf haf! Já jsem buldoček Freny.',
+      dog: 'Haf haf! Já jsem buldoček Frený.',
       sheep: 'Bééé! Já jsem ovečka.',
       chick: 'Píp píp! Já jsem kuřátko.',
     },
@@ -76,12 +81,74 @@ export const CS = {
     },
     bridge: {
       title: 'Most přes řeku',
-      intro: 'Pejsek Freny chce na druhou stranu řeky. Postav most! Polož kostky na vodu, až budou spojovat oba břehy.',
+      intro: 'Pejsek Frený chce na druhou stranu řeky. Postav most! Polož kostky na vodu, až budou spojovat oba břehy.',
       hint: 'Polož kostky tam, kde svítí. Ťukni na vodu.',
       half: 'Super, kus mostu už máš! Ještě jednu kostku vedle.',
-      success: 'Hurá! Most je hotový. Freny může přejít řeku. Děkuje ti!',
+      success: 'Hurá! Most je hotový. Frený může přejít řeku. Děkuje ti!',
+    },
+    feed: {
+      title: 'Nakrm zvířátka',
+      intro:
+        'Zvířátka mají hlad! V bublince nad každým je jídlo, které má rádo. Vyber dole stejnou kostku a ťukni na zvířátko.',
+      hint: 'Podívej se do bublinky nad zvířátkem. Vyber dole stejnou kostku a ťukni na zvířátko.',
+      wants: {
+        sheep: 'Ovečka má ráda zelenou trávu.',
+        chick: 'Kuřátko má rádo žlutá zrníčka.',
+        dog: 'Frený má rád hnědé granulky.',
+      },
+      yum: {
+        sheep: 'Mňam! Bééé, děkuju!',
+        chick: 'Mňam! Píp píp, děkuju!',
+        dog: 'Mňam! Haf haf, děkuju!',
+      },
+      full: 'Už jsem najedený, děkuju!',
+      success: 'Hurá! Všechna zvířátka jsou najedená a spokojená. Jsi skvělý hospodář!',
+    },
+    doghouse: {
+      title: 'Domeček pro Freného',
+      intro:
+        'Pejsek Frený potřebuje domeček. Polož kostky tam, kde to svítí: tři stěny a nahoru střechu. Dveře nech otevřené, ať se Frený dostane dovnitř!',
+      hint: 'Polož kostky na svítící místa. Tři stěny a střechu.',
+      keepFree: 'Nech Frenému dveře a místo uvnitř! Tu kostku můžeš gumou schovat.',
+      success: 'Hurá! Domeček je hotový. Frený jde dovnitř. Haf, děkuje ti!',
     },
   } satisfies Record<MissionId, { title: string; intro: string; hint: string; success: string } & Record<string, unknown>>,
+
+  quiz: {
+    intro: 'Bedna s otazníkem! Tady je úkol.',
+    again: 'Skoro! Zkus to ještě jednou.',
+    showHelp: 'Podívej, ta správná svítí.',
+    opened: 'Bedna je otevřená!',
+    numbers: ['nula', 'jedna', 'dvě', 'tři', 'čtyři', 'pět', 'šest'],
+    count: {
+      apple: 'Kolik je tu jablíček?',
+      star: 'Kolik je tu hvězdiček?',
+      fish: 'Kolik je tu rybiček?',
+      flower: 'Kolik je tu kytiček?',
+      balloon: 'Kolik je tu balónků?',
+    },
+    countEmoji: { apple: '🍎', star: '⭐', fish: '🐟', flower: '🌸', balloon: '🎈' },
+    color: (name: string) => `Ťukni na ${name} kostku.`,
+    colorNames: { red: 'červenou', blue: 'modrou', sand: 'žlutou', grass: 'zelenou', wood: 'hnědou', stone: 'šedou' } as Record<
+      string,
+      string
+    >,
+    shape: (name: string) => `Ťukni na ${name}.`,
+    shapeNames: { circle: 'kolečko', square: 'čtverec', triangle: 'trojúhelník', star: 'hvězdu', heart: 'srdíčko' } as Record<
+      string,
+      string
+    >,
+    shapeSpoken: { circle: 'Kolečko', square: 'Čtverec', triangle: 'Trojúhelník', star: 'Hvězda', heart: 'Srdíčko' } as Record<
+      string,
+      string
+    >,
+    letter: (l: string, word: string) => `Ťukni na písmeno ${l}. ${l} jako ${word}.`,
+    letterWords: { O: 'Ondra', L: 'Lauriska', F: 'Frený', M: 'máma', T: 'táta', A: 'auto', P: 'pes', K: 'kočka' } as Record<
+      string,
+      string
+    >,
+    letterPics: { O: '👦', L: '👧', F: '🐶', M: '👩', T: '👨', A: '🚗', P: '🐕', K: '🐱' } as Record<string, string>,
+  },
 
   ui: {
     play: 'Hrát',

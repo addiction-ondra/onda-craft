@@ -182,6 +182,42 @@ const stone: Painter = (g, r) => {
   g.fillRect(10, 3, 1, 3);
 };
 
+/** Dřevěná bedna s bílým otazníkem. */
+const QUESTION_MARK = [
+  '......',
+  '.####.',
+  '##..##',
+  '....##',
+  '...##.',
+  '..##..',
+  '..##..',
+  '......',
+  '..##..',
+];
+const questionBox: Painter = (g, r) => {
+  noise('#f59f00', 0.06)(g, r);
+  // rám bedny
+  g.fillStyle = '#a05a00';
+  g.fillRect(0, 0, S, 2);
+  g.fillRect(0, S - 2, S, 2);
+  g.fillRect(0, 0, 2, S);
+  g.fillRect(S - 2, 0, 2, S);
+  g.fillStyle = '#ffd43b';
+  g.fillRect(2, 2, S - 4, 1);
+  // otazník
+  const ox = 5;
+  const oy = 3;
+  QUESTION_MARK.forEach((row, y) =>
+    [...row].forEach((c, x) => {
+      if (c !== '#') return;
+      g.fillStyle = '#7a3e00';
+      g.fillRect(ox + x + 1, oy + y + 1, 1, 1);
+      g.fillStyle = '#ffffff';
+      g.fillRect(ox + x, oy + y, 1, 1);
+    }),
+  );
+};
+
 interface FacePainters {
   top: Painter;
   side: Painter;
@@ -200,6 +236,7 @@ const PAINTERS: Record<BlockType, FacePainters> = {
   leaves: { top: leaves, side: leaves, bottom: leaves },
   wall: { top: combine(wall, border('#c9b48a')), side: combine(wall, border('#c9b48a')), bottom: wall },
   roof: { top: combine(roof, border('#2f3a86')), side: combine(roof, border('#2f3a86')), bottom: roof },
+  question: { top: questionBox, side: questionBox, bottom: questionBox },
 };
 
 export interface BlockCanvases {

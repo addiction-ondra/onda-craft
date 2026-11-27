@@ -2,6 +2,52 @@ import * as THREE from 'three';
 import type { CharacterId } from '../game/characters';
 import { isStandable } from '../game/pathfinding';
 import { WORLD_D, WORLD_H, WORLD_W, type Vec3, type World } from '../game/world';
+import type { BlockType } from '../game/blocks';
+import { blockCanvases } from './textures';
+
+/** Bublina nad zvířátkem: obrázek jídla, které chce, nebo srdíčko po nakrmení. */
+export type Bubble = { food: BlockType } | 'heart' | null;
+
+const bubbleCache = new Map<string, THREE.SpriteMaterial>();
+function bubbleMaterial(b: Exclude<Bubble, null>): THREE.SpriteMaterial {
+  const key = b === 'heart' ? 'heart' : b.food;
+  let m = bubbleCache.get(key);
+  if (m) return m;
+  const c = document.createElement('canvas');
+  c.width = c.height = 128;
+  const g = c.getContext('2d')!;
+  // bílá „myšlenková“ bublina s ocáskem
+  g.fillStyle = '#ffffff';
+  g.strokeStyle = '#495057';
+  g.lineWidth = 5;
+  g.beginPath();
+  g.arc(64, 56, 46, 0, Math.PI * 2);
+  g.fill();
+  g.stroke();
+  g.beginPath();
+  g.arc(56, 112, 8, 0, Math.PI * 2);
+  g.fill();
+  g.stroke();
+  if (b === 'heart') {
+    g.fillStyle = '#ff4d6d';
+    g.beginPath();
+    g.moveTo(64, 84);
+    g.bezierCurveTo(20, 56, 34, 22, 64, 40);
+    g.bezierCurveTo(94, 22, 108, 56, 64, 84);
+    g.fill();
+  } else {
+    g.imageSmoothingEnabled = false;
+    g.drawImage(blockCanvases(b.food).top, 34, 26, 60, 60);
+    g.strokeStyle = 'rgba(0,0,0,0.35)';
+    g.lineWidth = 3;
+    g.strokeRect(34, 26, 60, 60);
+  }
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  m = new THREE.SpriteMaterial({ map: tex, depthTest: false, transparent: true });
+  bubbleCache.set(key, m);
+  return m;
+}
 
 export type AnimalKind = 'dog' | 'sheep' | 'chick';
 export type CreatureKind = AnimalKind | CharacterId;
@@ -43,7 +89,7 @@ interface Model {
 const EYE = '#1b1b1b';
 const SKIN = '#f6c9a3';
 
-/** Pejsek Freny – bílý francouzský buldoček s hnědým čumákem a hnědými flíčky. */
+/** Pejsek Frený – bílý francouzský buldoček s hnědým čumákem a hnědými flíčky. */
 function buildBulldog(): Model {
   const g = new THREE.Group();
   const white = '#f8f9fa';
@@ -207,6 +253,10 @@ export class Animal {
   private heading = 0;
   private marker: THREE.Group;
   private time = Math.random() * 10;
+  private bubble: THREE.Sprite | null = null;
+  private bubbleTimer = 0;
+  /** Kolik kostek je tvor vysoký pro hledání cesty (děti 2, zvířátka 1). */
+  readonly bodyHeight: number;
 
   constructor(
     readonly kind: CreatureKind,
@@ -214,6 +264,7 @@ export class Animal {
     world: World,
   ) {
     this.isCharacter = isCharacterKind(kind);
+    this.bodyHeight = this.isCharacter ? 2 : 1;
     const lvl = this.isCharacter ? start.y : (world.standLevel(start.x, start.z, start.y) ?? 1);
     this.cell = { x: start.x, y: lvl, z: start.z };
     this.to.set(start.x + 0.5, lvl, start.z + 0.5);
@@ -269,6 +320,26 @@ export class Animal {
     this.to.set(p.x + 0.5, p.y, p.z + 0.5);
     this.from.copy(this.to);
     this.t = 1;
+  }
+
+  /** Zobrazí bublinu (null = skrýt). `seconds` > 0 = sama zmizí. */
+  setBubble(b: Bubble, seconds = 0): void {
+    if (this.bubble) {
+      this.group.remove(this.bubble);
+      this.bubble = null;
+    }
+    this.bubbleTimer = seconds;
+    if (!b) return;
+    this.bubble = new THREE.Sprite(bubbleMaterial(b));
+    this.bubble.scale.setScalar(1.15);
+    this.bubble.position.y = this.model.height + 0.75;
+    this.bubble.renderOrder = 10;
+    this.group.add(this.bubble);
+  }
+
+  /** Chvíli zůstane na místě (např. pejsek v novém domečku). */
+  rest(seconds: number): void {
+    this.wait = seconds;
   }
 
   setSelected(on: boolean): void {
@@ -328,7 +399,7 @@ export class Animal {
       this.phase += dt * (this.isCharacter ? 11 : 13);
     } else if (this.path.length > 0) {
       const next = this.path.shift()!;
-      const ok = isStandable(world, next) && next.y - this.cell.y <= 1;
+      const ok = isStandable(world, next, this.bodyHeight) && next.y - this.cell.y <= 1;
       if (ok) this.startSegment(next, 2.4);
       else this.finish(false); // cestu mezitím někdo zastavěl
     } else {
@@ -362,6 +433,14 @@ export class Animal {
     const swing = moving ? Math.sin(this.phase) * 0.7 : 0;
     this.model.legs.forEach((l, i) => (l.rotation.x = i % 2 ? -swing : swing));
     this.model.arms.forEach((a, i) => (a.rotation.x = i % 2 ? swing : -swing));
+
+    if (this.bubble) {
+      this.bubble.position.y = this.model.height + 0.75 + Math.sin(this.time * 2.5) * 0.06;
+      if (this.bubbleTimer > 0) {
+        this.bubbleTimer -= dt;
+        if (this.bubbleTimer <= 0) this.setBubble(null);
+      }
+    }
 
     if (this.marker.visible) {
       const arrow = this.marker.getObjectByName('arrow');

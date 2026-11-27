@@ -78,7 +78,7 @@ function TopBar({ game, ui }: Props) {
           <div className="mission-hud-icon">
             <MissionIcon id={m.id} />
           </div>
-          <ProgressSlots id={m.id} progress={m.progress} target={m.target} />
+          <ProgressSlots id={m.id} progress={m.progress} target={m.target} fed={m.fed} />
           <button className="round-btn" aria-label="Zopakovat pokyn" onClick={() => game.repeatInstruction()}>
             <IconSpeaker />
           </button>
@@ -104,7 +104,7 @@ function TopBar({ game, ui }: Props) {
           {CHARACTER_IDS.map((id) => (
             <button
               key={id}
-              className={`char-btn ${ui.selectedCharacter === id ? 'selected' : ''}`}
+              className={`char-btn ${ui.selectedCharacter === id ? 'selected' : ''} ${ui.nudgeCharacters ? 'nudge' : ''}`}
               aria-label={CS.voice.characters[id].name}
               aria-pressed={ui.selectedCharacter === id}
               onClick={() => game.selectCharacter(ui.selectedCharacter === id ? null : id)}

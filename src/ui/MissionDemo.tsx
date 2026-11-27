@@ -22,6 +22,35 @@ export function MissionDemo({ id }: { id: MissionId }) {
       </div>
     );
   }
+  if (id === 'feed') {
+    // ovečka s bublinou trávy → ruka vybere trávu → ťukne na ovečku → srdíčko
+    return (
+      <div className="demo demo-feed" aria-hidden>
+        <div className="demo-ground" />
+        <div className="demo-sheep">🐑</div>
+        <div className="demo-bubble">
+          <img src={iconFor('grass')} alt="" />
+        </div>
+        <div className="demo-heart">❤️</div>
+        <img className="demo-food-pick" src={iconFor('grass')} alt="" />
+        <div className="demo-hand demo-hand-feed">👆</div>
+      </div>
+    );
+  }
+  if (id === 'doghouse') {
+    // svítící místa se postupně zaplní kostkami, pak Frený vleze dovnitř
+    return (
+      <div className="demo demo-doghouse" aria-hidden>
+        <div className="demo-ground" />
+        <div className="demo-hut">
+          {['wall-l', 'wall-r', 'roof'].map((k, i) => (
+            <img key={k} className={`demo-hut-part ${k}`} src={iconFor('wood')} alt="" style={{ animationDelay: `${0.6 + i * 0.8}s` }} />
+          ))}
+        </div>
+        <div className="demo-dog demo-dog-home">🐶</div>
+      </div>
+    );
+  }
   if (id === 'findRed') {
     return (
       <div className="demo demo-red" aria-hidden>

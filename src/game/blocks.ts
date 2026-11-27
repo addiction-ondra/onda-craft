@@ -14,6 +14,7 @@ export const BLOCK_TYPES = [
   'leaves', // 8 – listí
   'wall', // 9 – zeď domečku
   'roof', // 10 – střecha
+  'question', // 11 – bedna s otazníkem (úkol pro postavičky)
 ] as const;
 
 export type BlockType = (typeof BLOCK_TYPES)[number];
@@ -49,6 +50,7 @@ export const BLOCKS: Record<BlockType, BlockDef> = {
   leaves: def('leaves', '#2f9e44', false),
   wall: def('wall', '#fbefd5', false),
   roof: def('roof', '#5c6bc0', false),
+  question: def('question', '#f59f00', false),
 };
 
 /** Materiály v paletě – přesně 6, v tomto pořadí. */

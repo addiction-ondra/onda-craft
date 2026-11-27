@@ -1,7 +1,7 @@
 # ONDA CRAFT 🧱
 
 Vzdělávací 3D kostičková stavebnice pro předškoláky (cca 4 roky).
-Barevný voxelový ostrov s řekou, stromy, domečkem a zvířátky – pejskem Frenym,
+Barevný voxelový ostrov s řekou, stromy, domečkem a zvířátky – pejskem Freným,
 ovečkou a kuřátkem. Ovládání dotykem, minimum textu, české hlasové pokyny.
 
 - **Bez** reklam, nákupů, registrace, backendu, externích API a sběru dat.
@@ -11,13 +11,27 @@ ovečkou a kuřátkem. Ovládání dotykem, minimum textu, české hlasové poky
 
 Architektura a roadmapa: [PLAN.md](PLAN.md) · pravidla vývoje: [CLAUDE.md](CLAUDE.md)
 
+## Co umí verze 0.3
+
+- **Mise 4 – Nakrm zvířátka:** nad zvířátkem je bublina s jídlem, které má rádo.
+  Vyber dole stejnou kostku a ťukni na zvířátko (ovečka = tráva, kuřátko = žlutá
+  zrníčka, Frený = hnědé granulky).
+- **Mise 5 – Domeček pro Freného:** kamera sama ukáže svítící místa – 3 stěny
+  a střecha. Ťuknutí na svítící místo položí kostku přesně tam. Hotový domeček
+  Frený sám obsadí.
+- **Bedny s otazníkem:** pošli k bedně Ondru nebo Lauriskou a otevře se úkol –
+  počítání do 5, barvy, tvary nebo písmena (O jako Ondra). Hlas úkol přečte,
+  odpovědi jsou obrázky. Chyba = „zkus znovu“, po dvou pokusech se správná
+  odpověď rozsvítí.
+- Pejsek se jmenuje **Frený**.
+
 ## Co umí verze 0.2
 
 - **Hrad** s věžemi, hradbami a bránou – postavičky do něj můžou dojít.
 - **Postavičky Ondra a Lauriska:** ťukni na postavičku (nebo na její obličej
   vpravo nahoře), pak ťukni kamkoli do mapy – postavička tam dojde. Přes řeku
   jen po mostě, na vysoké kostky jen po schodech.
-- **Pejsek Freny** je bílý francouzský buldoček s hnědým čumákem a flíčky.
+- **Pejsek Frený** je bílý francouzský buldoček s hnědým čumákem a flíčky.
 - Uložený svět z verze 0.1 dostane hrad automaticky (stavby mimo hrad zůstanou).
 
 ## Co umí verze 0.1 (MVP)

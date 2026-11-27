@@ -267,6 +267,7 @@ export function generateDefaultWorld(): World {
   // pár kamenů
   w.setRaw({ x: 4, y: 1, z: 5 }, 'stone');
   w.setRaw({ x: 8, y: 1, z: 5 }, 'stone');
+  refillQuestionBoxes(w);
   w.version = 0;
   return w;
 }
@@ -282,4 +283,84 @@ export function upgradeWorldToCastle(w: World): void {
   addCastle(w);
   addHouse(w, true);
   w.version = 0;
+}
+
+// ---------------------------------------------------------------------------
+// Domeček pro pejska Freného (mise 5) – plán, který ukazují svítící kostky
+// ---------------------------------------------------------------------------
+
+/** Malý domeček na jižním břehu vedle hradu: 3 stěny, střecha, dveře k řece. */
+export const DOGHOUSE = {
+  inside: { x: 3, y: 1, z: 11 },
+  door: { x: 3, y: 1, z: 10 },
+  walls: [
+    { x: 2, y: 1, z: 11 },
+    { x: 4, y: 1, z: 11 },
+    { x: 3, y: 1, z: 12 },
+  ],
+  roof: { x: 3, y: 2, z: 11 },
+  /** Ze které strany je domeček dobře vidět (hrad ho jinak zakrývá). */
+  viewAzimuthDeg: 225,
+} as const;
+
+export const doghouseParts = (): Vec3[] => [...DOGHOUSE.walls, DOGHOUSE.roof];
+
+export interface DoghouseStatus {
+  /** Kolik ze 4 kostek (3 stěny + střecha) už je postaveno. */
+  filled: number;
+  /** Je uvnitř volno pro pejska? */
+  insideFree: boolean;
+  /** Jsou dveře volné? */
+  doorFree: boolean;
+  done: boolean;
+}
+
+export function doghouseStatus(w: World): DoghouseStatus {
+  const filled = doghouseParts().filter((p) => w.isSolid(p)).length;
+  const insideFree = !w.has(DOGHOUSE.inside);
+  const doorFree = !w.has(DOGHOUSE.door);
+  return { filled, insideFree, doorFree, done: filled === 4 && insideFree && doorFree };
+}
+
+// ---------------------------------------------------------------------------
+// Bedny s otazníkem – k bedně musí dojít Ondra nebo Lauriska, pak přijde úkol
+// ---------------------------------------------------------------------------
+
+/** Místa beden: u startu, na nádvoří hradu a za řekou (tam je potřeba most). */
+export const QUESTION_SPOTS: Vec3[] = [
+  { x: 15, y: 1, z: 15 },
+  { x: 9, y: 1, z: 12 },
+  { x: 4, y: 1, z: 2 },
+  { x: 14, y: 1, z: 6 },
+];
+
+/**
+ * Když jsou všechny bedny otevřené, při dalším spuštění se objeví nové
+ * (jen na volných místech). Vrací počet nově přidaných.
+ */
+export function refillQuestionBoxes(w: World): number {
+  if (w.count('question') > 0) return 0;
+  let n = 0;
+  for (const p of QUESTION_SPOTS) {
+    const below = w.get({ x: p.x, y: p.y - 1, z: p.z });
+    if (w.has(p) || below === undefined || below === 'water') continue;
+    w.setRaw(p, 'question');
+    n++;
+  }
+  return n;
+}
+
+/** Stojí postavička u bedny (vedle ní nebo na ní)? Vrací pozici bedny. */
+export function adjacentQuestionBox(w: World, p: Vec3): Vec3 | null {
+  for (const [dx, dy, dz] of [
+    [1, 0, 0],
+    [-1, 0, 0],
+    [0, 0, 1],
+    [0, 0, -1],
+    [0, -1, 0],
+  ]) {
+    const q = { x: p.x + dx, y: p.y + dy, z: p.z + dz };
+    if (w.get(q) === 'question') return q;
+  }
+  return null;
 }

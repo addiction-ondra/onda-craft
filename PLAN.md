@@ -36,7 +36,8 @@ src/
 │   ├── blocks.ts         definice typů kostek (barvy, vlastnosti)
 │   ├── world.ts          model světa 16×16×12, generování výchozího světa
 │   ├── missions.ts       definice a vyhodnocování misí (reducer styl)
-│   ├── pathfinding.ts    hledání cesty pro postavičky (BFS, schod max. 1 kostka)
+│   ├── pathfinding.ts    hledání cesty (BFS, schod max. 1 kostka, výška těla: děti 2, pejsek 1)
+│   ├── quiz.ts           úkoly z beden s otazníkem (počítání, barvy, tvary, písmena)
 │   ├── characters.ts     postavičky Ondra a Lauriska, výchozí pozice
 │   ├── settings.ts       rodičovské nastavení + výchozí hodnoty
 │   └── storage.ts        serializace / LocalStorage s verzí formátu
@@ -46,7 +47,7 @@ src/
 ├── render/               VŠE, co sahá na Three.js
 │   ├── textures.ts       procedurální pixelové textury (canvas)
 │   ├── SceneView.ts      scéna, kamera, světla, instancované kostky, raycast
-│   ├── animals.ts        zvířátka (pejsek Freny, ovečka, kuřátko)
+│   ├── animals.ts        zvířátka (pejsek Frený, ovečka, kuřátko)
 │   └── effects.ts        částice, nápovědní „duchové“ kostky, majáčky
 ├── controller/
 │   └── GameController.ts lepidlo: vstup → svět → mise → zvuk/hlas → uložení;
@@ -80,7 +81,7 @@ React UI ◄── subscribe/getSnapshot ◄── GameController
 - **6 stavebních materiálů**: dřevo, kámen, červená, tráva, písek, modrá.
 - Další (nestavitelné z palety) typy: kmen, listí, voda, zeď domečku, střecha.
 - **Kamera**: tažení jedním prstem = otáčení, dvěma prsty = přiblížení, velká tlačítka ⟲ ⟳ ＋ －.
-- **Zvířátka** (buldoček Freny, ovečka, kuřátko) chodí po světě, po ťuknutí poskočí a ozvou se.
+- **Zvířátka** (buldoček Frený, ovečka, kuřátko) chodí po světě, po ťuknutí poskočí a ozvou se.
 - **Postavičky Ondra a Lauriska**: ťuknutí na postavičku (nebo její obličej nahoře) ji vybere,
   další ťuknutí do mapy = „jdi sem“. Cesta se hledá po zemi, přes most a bránou;
   vylézt umí o 1 kostku, seskočit až ze 3. Když cíl není dosažitelný, dojde co nejblíž
@@ -96,11 +97,17 @@ React UI ◄── subscribe/getSnapshot ◄── GameController
 | 1 | Polož 5 dřevěných kostek | MVP | počítadlo položených `wood` | pulzující dřevo v paletě |
 | 2 | Najdi 3 červené kostky | MVP | 3 skryté cíle, ťuknutím je „najdeš“ | třpytivé majáčky nad cíli |
 | 3 | Postav most přes řeku | MVP | `hasBridge(world)` | průhledné „duchové“ kostky mostu |
-| 4 | Nakrm zvířátka | další verze | | |
-| 5 | Domeček pro pejska Frenyho | další verze | | |
+| 4 | Nakrm zvířátka | v0.3 | nad zvířátkem bublina s jídlem; vybrat stejnou kostku a ťuknout (ovečka = tráva, kuřátko = písek/zrní, Frený = dřevo/granulky) | bublina, blikající správné jídlo |
+| 5 | Domeček pro pejska Freného | v0.3 | 3 stěny + střecha na svítících místech, volné dveře a vnitřek (`doghouseStatus`); Frený pak sám vleze dovnitř | kamera sama ukáže místo, svítící místa |
 | 6 | Čísla 1–10 | další verze | | |
 | 7 | Geometrické tvary | další verze | | |
 | 8 | Písmena | další verze | | |
+
+**Bedny s otazníkem:** ve světě jsou 4 bedny (u startu, na nádvoří, za řekou – tam vede až most,
+u domečku). Otevře je jen postavička, která k bedně dojde. Pak přijde krátký úkol se 3 obrázkovými
+odpověďmi a hlasem: počítání 1–5, barva kostky, tvar, písmeno („O jako Ondra“). Špatná odpověď =
+„zkus znovu“, po 2 pokusech se správná rozsvítí. Když jsou všechny otevřené, při dalším spuštění
+se objeví nové.
 
 Každá mise má: **úvod s animovanou ukázkou** (karta + hlas), **průběh** (ikonky
 se plní), **nápovědu** (po nečinnosti nebo při jiném materiálu – nikdy trest),
@@ -117,8 +124,9 @@ se plní), **nápovědu** (po nečinnosti nebo při jiném materiálu – nikdy 
 ## 7. Roadmapa
 
 - **v0.1 (MVP)** – svět 16×16, 6 materiálů, volné stavění, mise 1–3, hlas, rodičovské nastavení, autosave, PWA. ✅
-- **v0.2** – hrad, postavičky Ondra a Lauriska s chozením, buldoček Freny. ✅
-- **v0.3** – mise 4 (krmení zvířátek: tráva → ovečka, zrní → kuřátko), mise 5 (domeček pro Frenyho – detekce uzavřeného prostoru se střechou).
+- **v0.2** – hrad, postavičky Ondra a Lauriska s chozením, buldoček Frený. ✅
+- **v0.3** – mise 4 (krmení zvířátek), mise 5 (domeček pro Freného), bedny s otazníkem s úkoly
+  (počítání 1–5, barvy, tvary, písmena), ťuknutí na svítící místo položí kostku přímo tam. ✅
 - **v0.4** – mise 6 (čísla: postav věž z N kostek, hlasové počítání), mise 7 (tvary: obtáhni čtverec/obdélník/trojúhelník na zemi).
 - **v0.5** – mise 8 (písmena z kostek, začáteční hlásky), více světů / slotů pro sourozence.
 - Průběžně: přístupnost (větší kontrast), výkon na starších iPadech, nahrané lidské hlasy jako fallback.

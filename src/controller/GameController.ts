@@ -2,7 +2,10 @@ import { Speech } from '../audio/speech';
 import { Sfx } from '../audio/sfx';
 import { BLOCKS, type BlockType } from '../game/blocks';
 import {
+  ANIMAL_FOOD,
+  FEED_ORDER,
   getMission,
+  isFeedable,
   isMissionTarget,
   reduceMission,
   restoreMission,
@@ -10,16 +13,29 @@ import {
   type GameEvent,
   type MissionFeedback,
   type MissionId,
+  type FeedableAnimal,
   type MissionState,
 } from '../game/missions';
 import { DEFAULT_SETTINGS, HINT_DELAY_MS, type Settings } from '../game/settings';
 import { loadFromStorage, saveToStorage } from '../game/storage';
-import { bridgeProgress, generateDefaultWorld, isInCastle, RIVER_Z, type Vec3, type World } from '../game/world';
+import {
+  adjacentQuestionBox,
+  bridgeProgress,
+  DOGHOUSE,
+  doghouseParts,
+  generateDefaultWorld,
+  isInCastle,
+  refillQuestionBoxes,
+  RIVER_Z,
+  type Vec3,
+  type World,
+} from '../game/world';
 import { CS } from '../i18n/cs';
 import { SceneView } from '../render/SceneView';
 import type { Animal, AnimalKind } from '../render/animals';
 import { CHARACTER_IDS, resolveCharacterPos, type CharacterId, type CharacterState } from '../game/characters';
-import { findPath, walkGoalFromTap } from '../game/pathfinding';
+import { dropToStand, findPath, walkGoalFromTap, type PathResult } from '../game/pathfinding';
+import { generateQuiz, isCorrect, type Quiz } from '../game/quiz';
 
 export type Mode = 'build' | 'erase';
 
@@ -29,13 +45,14 @@ export type Overlay =
   | { kind: 'success'; mission: MissionId }
   | { kind: 'missions' }
   | { kind: 'parents' }
-  | { kind: 'break' };
+  | { kind: 'break' }
+  | { kind: 'quiz'; quiz: Quiz; box: Vec3; wrong: string[]; solved: boolean; help: boolean };
 
 export interface UiSnapshot {
   started: boolean;
   mode: Mode;
   material: BlockType;
-  mission: Pick<MissionState, 'id' | 'progress' | 'target' | 'done'> | null;
+  mission: Pick<MissionState, 'id' | 'progress' | 'target' | 'done' | 'fed'> | null;
   completed: MissionId[];
   settings: Settings;
   overlay: Overlay;
@@ -43,6 +60,8 @@ export interface UiSnapshot {
   highlightMaterial: BlockType | null;
   /** Postavička, která čeká, kam má jít. */
   selectedCharacter: CharacterId | null;
+  /** Rozblikat tlačítka postaviček (nápověda u bedny s otazníkem). */
+  nudgeCharacters: boolean;
   hasCzechVoice: boolean;
   speechSupported: boolean;
 }
@@ -67,6 +86,10 @@ export class GameController {
   private ghostTimer: number | undefined;
   private storage: Storage | null;
   private characters = new Map<CharacterId, Animal>();
+  private animals = new Map<AnimalKind, Animal>();
+  private quizCounter = Math.floor(Math.random() * 4);
+  private nudgeTimer: number | undefined;
+  private successShown = false;
   private savedCharacters: CharacterState[];
 
   constructor() {
@@ -82,6 +105,8 @@ export class GameController {
     this.savedCharacters = loaded?.characters ?? [];
     this.mission = loaded?.activeMission && !loaded.activeMission.done ? loaded.activeMission : null;
     if (this.mission) restoreMission(this.mission, this.world);
+    // Když jsou všechny bedny otevřené (nebo jde o starší uložení), objeví se nové.
+    refillQuestionBoxes(this.world);
 
     this.snapshot = {
       started: false,
@@ -93,6 +118,7 @@ export class GameController {
       overlay: null,
       highlightMaterial: null,
       selectedCharacter: null,
+      nudgeCharacters: false,
       hasCzechVoice: this.speech.hasCzechVoice,
       speechSupported: this.speech.supported,
     };
@@ -120,7 +146,7 @@ export class GameController {
 
   private missionView(): UiSnapshot['mission'] {
     const m = this.mission;
-    return m ? { id: m.id, progress: m.progress, target: m.target, done: m.done } : null;
+    return m ? { id: m.id, progress: m.progress, target: m.target, done: m.done, fed: m.fed } : null;
   }
 
   // --------------------------------------------------------------- životní cyklus
@@ -134,7 +160,8 @@ export class GameController {
       ['sheep', 2, 6],
       ['chick', 7, 4],
     ];
-    for (const [kind, x, z] of animals) this.view.addAnimal(kind, { x, y: 1, z });
+    this.animals.clear();
+    for (const [kind, x, z] of animals) this.animals.set(kind, this.view.addAnimal(kind, { x, y: 1, z }));
     this.characters.clear();
     for (const id of CHARACTER_IDS) {
       const saved = this.savedCharacters.find((c) => c.id === id)?.pos;
@@ -217,7 +244,11 @@ export class GameController {
     this.sfx.play('click');
     this.set({ overlay: null });
     this.markActivity();
-    if (o?.kind === 'success') this.say(CS.voice.freeBuild);
+    if (o?.kind === 'success') {
+      this.say(CS.voice.freeBuild);
+      // po úkolu se pohled vrátí na celý ostrov
+      this.view?.resetView();
+    }
   }
 
   /** Výběr mise v menu → úvodní karta s ukázkou a hlasem. */
@@ -245,6 +276,7 @@ export class GameController {
     this.markActivity();
     // Názorná ukázka přímo ve světě: most ukáže, kam stavět.
     if (id === 'bridge') this.flashGhosts(6000);
+    else this.refreshMissionVisuals(true);
     this.scheduleSave();
   }
 
@@ -275,6 +307,15 @@ export class GameController {
     if (m.id === 'wood5' && this.snapshot.material !== 'wood') this.set({ highlightMaterial: 'wood' });
     if (m.id === 'findRed') this.view?.effects.setBeacons(m.targets);
     if (m.id === 'bridge') this.flashGhosts(8000);
+    if (m.id === 'feed') {
+      const hungry = FEED_ORDER.find((k) => !(m.fed ?? []).includes(k));
+      if (hungry) {
+        this.set({ highlightMaterial: ANIMAL_FOOD[hungry] });
+        this.animals.get(hungry)?.poke();
+      }
+      this.refreshMissionVisuals();
+    }
+    if (m.id === 'doghouse') this.refreshMissionVisuals(true);
   }
 
   // ----------------------------------------------------------------- nastavení
@@ -307,6 +348,7 @@ export class GameController {
     this.world = generateDefaultWorld();
     this.view?.setWorld(this.world);
     for (const [id, a] of this.characters) a.teleport(resolveCharacterPos(this.world, id));
+    for (const a of this.animals.values()) a.setBubble(null);
     this.view?.effects.setWalkTarget(null);
     this.selectCharacter(null, true);
     this.set({ mission: null, highlightMaterial: null });
@@ -355,13 +397,41 @@ export class GameController {
       if (a.isCharacter) {
         const id = a.kind as CharacterId;
         this.selectCharacter(this.snapshot.selectedCharacter === id ? null : id);
+      } else if (this.mission?.id === 'feed' && isFeedable(a.kind)) {
+        this.feedAnimal(a, a.kind);
       } else {
         this.pokeAnimal(a);
       }
       return;
     }
 
+    if (hit.kind === 'ghost') {
+      const sel = this.snapshot.selectedCharacter;
+      if (sel) {
+        this.walkCharacter(sel, { ...hit.pos, y: hit.pos.y - 1 }, { x: 0, y: 1, z: 0 });
+      } else if (this.snapshot.mode === 'build') {
+        this.placeBlock(hit.pos);
+      } else {
+        this.sfx.play('soft');
+      }
+      return;
+    }
+
     const { pos, normal, block } = hit;
+
+    // Bedna s otazníkem: otevře ji jen postavička, která k ní dojde.
+    if (block === 'question') {
+      const sel = this.snapshot.selectedCharacter;
+      if (sel) {
+        this.walkCharacter(sel, pos, normal, pos);
+      } else {
+        this.view.effects.burst({ ...pos, y: pos.y + 0.5 }, '#ffd43b', 6);
+        this.sfx.play('soft');
+        this.say(CS.voice.boxNeedsFriend);
+        this.nudgeCharacters();
+      }
+      return;
+    }
 
     // Vybraná postavička: ťuknutí do mapy = „jdi sem“ (místo stavění).
     if (this.snapshot.selectedCharacter) {
@@ -381,20 +451,7 @@ export class GameController {
     }
 
     if (this.snapshot.mode === 'build') {
-      const target = { x: pos.x + normal.x, y: pos.y + normal.y, z: pos.z + normal.z };
-      const material = this.snapshot.material;
-      const res = this.world.place(target, material);
-      if (res === 'ok') {
-        this.sfx.play('place');
-        this.view.effects.pop(target);
-        this.dispatch({ kind: 'placed', block: material, pos: target });
-        this.scheduleSave();
-      } else if (res === 'too-high') {
-        this.sfx.play('soft');
-        this.say(CS.voice.tooHigh);
-      } else {
-        this.sfx.play('soft');
-      }
+      this.placeBlock({ x: pos.x + normal.x, y: pos.y + normal.y, z: pos.z + normal.z });
     } else {
       const res = this.world.remove(pos);
       if (res === 'ok') {
@@ -412,6 +469,22 @@ export class GameController {
     }
   }
 
+  private placeBlock(target: Vec3): void {
+    const material = this.snapshot.material;
+    const res = this.world.place(target, material);
+    if (res === 'ok') {
+      this.sfx.play('place');
+      this.view?.effects.pop(target);
+      this.dispatch({ kind: 'placed', block: material, pos: target });
+      this.scheduleSave();
+    } else if (res === 'too-high') {
+      this.sfx.play('soft');
+      this.say(CS.voice.tooHigh);
+    } else {
+      this.sfx.play('soft');
+    }
+  }
+
   /** Vybere postavičku (ťuknutí na ni nebo na její tlačítko). null = zrušit výběr. */
   selectCharacter(id: CharacterId | null, silent = false): void {
     this.markActivity();
@@ -423,12 +496,34 @@ export class GameController {
     this.say(CS.voice.characters[id].hello);
   }
 
-  private walkCharacter(id: CharacterId, pos: Vec3, normal: Vec3): void {
+  private nudgeCharacters(): void {
+    window.clearTimeout(this.nudgeTimer);
+    this.set({ nudgeCharacters: true });
+    this.nudgeTimer = window.setTimeout(() => this.set({ nudgeCharacters: false }), 4000);
+  }
+
+  /** Pošle postavičku na místo. S `box` jde k bedně (na nejbližší volné místo vedle ní). */
+  private walkCharacter(id: CharacterId, pos: Vec3, normal: Vec3, box?: Vec3): void {
     const a = this.characters.get(id);
     if (!a || !this.view) return;
     const start = a.standCell;
-    const goal = walkGoalFromTap(this.world, pos, normal);
-    const { path, reached } = findPath(this.world, start, goal);
+    let result: PathResult | null = null;
+    if (box) {
+      for (const [dx, dz] of [
+        [1, 0],
+        [-1, 0],
+        [0, 1],
+        [0, -1],
+      ]) {
+        const g = dropToStand(this.world, box.x + dx, box.y + 1, box.z + dz);
+        if (!g) continue;
+        const r = findPath(this.world, start, g);
+        if (r.reached && (!result || !result.reached || r.path.length < result.path.length)) result = r;
+        else if (!result) result = r;
+      }
+    }
+    if (!result) result = findPath(this.world, start, walkGoalFromTap(this.world, pos, normal));
+    const { path, reached } = result;
     const end = path.length ? path[path.length - 1] : start;
     const wasInCastle = isInCastle(start);
     this.view.effects.setWalkTarget(end);
@@ -436,7 +531,11 @@ export class GameController {
     this.say(reached ? pickOne(CS.voice.walk) : CS.voice.cantReach);
     a.walk(path, () => {
       this.view?.effects.setWalkTarget(null);
-      if (!wasInCastle && isInCastle(a.standCell)) {
+      const here = a.standCell;
+      const nearBox = adjacentQuestionBox(this.world, here);
+      if (nearBox && !this.snapshot.overlay) {
+        this.openQuiz(nearBox);
+      } else if (!wasInCastle && isInCastle(here)) {
         this.sfx.play('collect');
         this.say(CS.voice.inCastle);
       }
@@ -444,6 +543,74 @@ export class GameController {
     });
     // Po zadání cesty se výběr zruší – další ťuknutí zase staví.
     this.selectCharacter(null, true);
+  }
+
+  // ------------------------------------------------------------- bedny s otazníkem
+
+  private quizPrompt(q: Quiz): string {
+    const t = CS.quiz;
+    switch (q.kind) {
+      case 'count':
+        return t.count[q.item ?? 'apple'];
+      case 'color':
+        return t.color(t.colorNames[q.answer]);
+      case 'shape':
+        return t.shape(t.shapeNames[q.answer]);
+      case 'letter':
+        return t.letter(q.answer, t.letterWords[q.answer]);
+    }
+  }
+
+  private openQuiz(box: Vec3): void {
+    const quiz = generateQuiz(this.quizCounter++);
+    this.sfx.play('collect');
+    this.set({ overlay: { kind: 'quiz', quiz, box, wrong: [], solved: false, help: false } });
+    this.say(`${CS.quiz.intro} ${this.quizPrompt(quiz)}`);
+  }
+
+  repeatQuiz(): void {
+    const o = this.snapshot.overlay;
+    if (o?.kind === 'quiz') this.say(this.quizPrompt(o.quiz));
+  }
+
+  /** Odpověď v úkolu z bedny. Špatná odpověď = „zkus znovu“, po 2 pokusech se správná rozsvítí. */
+  answerQuiz(option: string): void {
+    const o = this.snapshot.overlay;
+    if (o?.kind !== 'quiz' || o.solved) return;
+    this.markActivity();
+    if (isCorrect(o.quiz, option)) {
+      this.sfx.play('success');
+      this.say(`${pickOne(CS.voice.praise)} ${CS.quiz.opened}`);
+      this.set({ overlay: { ...o, solved: true } });
+      window.setTimeout(() => {
+        const cur = this.snapshot.overlay;
+        if (cur?.kind !== 'quiz' || cur.box !== o.box) return;
+        this.world.deleteRaw(o.box);
+        this.view?.effects.burst(o.box, '#ffd43b', 18);
+        this.view?.effects.pop(o.box);
+        this.set({ overlay: null });
+        this.saveNow();
+      }, 2000);
+      return;
+    }
+    if (o.wrong.includes(option)) return;
+    const wrong = [...o.wrong, option];
+    const help = wrong.length >= 2;
+    this.sfx.play('soft');
+    this.say(help ? CS.quiz.showHelp : CS.quiz.again);
+    this.set({ overlay: { ...o, wrong, help } });
+  }
+
+  // ------------------------------------------------------------------ zvířátka
+
+  private feedAnimal(a: Animal, kind: FeedableAnimal): void {
+    a.poke();
+    if ((this.mission?.fed ?? []).includes(kind)) {
+      this.sfx.play('animal');
+      this.say(CS.missions.feed.full);
+      return;
+    }
+    this.dispatch({ kind: 'fed', animal: kind, food: this.snapshot.material });
   }
 
   private pokeAnimal(a: Animal): void {
@@ -457,6 +624,8 @@ export class GameController {
     const { state, feedback } = reduceMission(this.mission, ev, this.world);
     this.mission = state;
     this.set({ mission: this.missionView() });
+    // svítící místa domečku vždy odpovídají tomu, co ještě chybí
+    if (state.id === 'doghouse' && !state.done) this.refreshMissionVisuals();
     this.onFeedback(feedback, ev);
   }
 
@@ -469,7 +638,23 @@ export class GameController {
         this.say(texts.wood5.otherMaterial);
         this.set({ highlightMaterial: 'wood' });
       }
+      if (m.id === 'feed' && ev.kind === 'fed') {
+        this.sfx.play('soft');
+        this.say(texts.feed.wants[ev.animal]);
+        this.set({ highlightMaterial: ANIMAL_FOOD[ev.animal] });
+      }
+      if (m.id === 'doghouse' && m.otherTries % 2 === 1) this.say(texts.doghouse.keepFree);
       return;
+    }
+    if (ev.kind === 'fed') {
+      // nakrmeno (pokrok i dokončení): srdíčko a poděkování
+      this.animals.get(ev.animal)?.setBubble('heart', 3);
+      this.sfx.play('collect');
+      this.set({ highlightMaterial: null });
+      if (fb === 'progress') {
+        this.say(texts.feed.yum[ev.animal]);
+        return;
+      }
     }
     if (fb === 'progress') {
       if (m.id === 'wood5') this.say(texts.wood5.count[m.progress - 1] ?? '');
@@ -478,6 +663,7 @@ export class GameController {
         this.say(texts.bridge.half);
         this.flashGhosts(5000);
       }
+      if (m.id === 'doghouse') this.say(pickOne(CS.voice.praise));
       return;
     }
     // complete
@@ -486,13 +672,33 @@ export class GameController {
     this.endMissionVisuals();
     const completed = this.snapshot.completed.includes(id) ? this.snapshot.completed : [...this.snapshot.completed, id];
     this.mission = null;
-    this.set({ completed, highlightMaterial: null, mission: { id, progress: m.target, target: m.target, done: true } });
+    this.set({ completed, highlightMaterial: null, mission: { id, progress: m.target, target: m.target, done: true, fed: m.fed } });
     this.saveNow();
-    window.setTimeout(() => {
+    this.successShown = false;
+    const showSuccess = (speak: boolean) => {
+      if (this.successShown) return;
+      this.successShown = true;
       this.sfx.play('success');
       this.set({ overlay: { kind: 'success', mission: id }, mission: null });
-      this.say(texts[id].success);
-    }, 900);
+      if (speak) this.say(texts[id].success);
+    };
+    if (id === 'doghouse') {
+      // Frený nejdřív sám doběhne do nového domečku, pak teprve oslava.
+      this.sfx.play('success');
+      this.say(texts.doghouse.success);
+      const dog = this.animals.get('dog');
+      if (dog) {
+        const { path } = findPath(this.world, dog.standCell, DOGHOUSE.inside, dog.bodyHeight);
+        dog.walk(path, () => {
+          dog.rest(30);
+          dog.setBubble('heart', 4);
+          window.setTimeout(() => showSuccess(false), 1200);
+        });
+      }
+      window.setTimeout(() => showSuccess(false), 9000);
+      return;
+    }
+    window.setTimeout(() => showSuccess(true), 900);
   }
 
   // ------------------------------------------------------------- vizuální nápovědy
@@ -508,14 +714,31 @@ export class GameController {
     this.ghostTimer = window.setTimeout(() => this.view?.effects.setGhosts([]), ms);
   }
 
-  private refreshMissionVisuals(): void {
-    if (this.mission?.id === 'bridge') this.flashGhosts(4000);
+  /** `focus` = natočit kameru na místo úkolu (start mise, nápověda). */
+  private refreshMissionVisuals(focus = false): void {
+    const m = this.mission;
+    if (m?.id === 'bridge') this.flashGhosts(4000);
+    if (m?.id === 'feed') {
+      // bublina s jídlem nad každým hladovým zvířátkem
+      for (const k of FEED_ORDER) {
+        if (!(m.fed ?? []).includes(k)) this.animals.get(k)?.setBubble({ food: ANIMAL_FOOD[k] });
+      }
+    }
+    if (m?.id === 'doghouse') {
+      if (focus) {
+        this.view?.focusOn(DOGHOUSE.inside, DOGHOUSE.viewAzimuthDeg);
+        this.animals.get('dog')?.rest(90); // Frený sedí a dívá se, jak mu stavíš domeček
+      }
+      window.clearTimeout(this.ghostTimer);
+      this.view?.effects.setGhosts(doghouseParts().filter((p) => !this.world.has(p)));
+    }
   }
 
   private endMissionVisuals(): void {
     window.clearTimeout(this.ghostTimer);
     this.view?.effects.setGhosts([]);
     this.view?.effects.setBeacons([]);
+    for (const a of this.animals.values()) a.setBubble(null);
   }
 
   // ------------------------------------------------------------------- zvuk / hlas

@@ -9,10 +9,10 @@ export const MAX_STEP_DOWN = 3;
  * Může tu postavička stát? Pod nohama pevná kostka (ne voda),
  * pole pro tělo i hlavu je volné.
  */
-export function isStandable(w: World, p: Vec3): boolean {
+export function isStandable(w: World, p: Vec3, height = 2): boolean {
   if (p.x < 0 || p.z < 0 || p.x >= WORLD_W || p.z >= WORLD_D) return false;
-  if (p.y < 1 || p.y >= WORLD_H - 1) return false;
-  if (w.has(p) || w.has({ x: p.x, y: p.y + 1, z: p.z })) return false;
+  if (p.y < 1 || p.y > WORLD_H - height) return false;
+  for (let h = 0; h < height; h++) if (w.has({ x: p.x, y: p.y + h, z: p.z })) return false;
   const below = w.get({ x: p.x, y: p.y - 1, z: p.z });
   return below !== undefined && below !== 'water';
 }
@@ -27,7 +27,8 @@ export function dropToStand(w: World, x: number, fromY: number, z: number): Vec3
   return null;
 }
 
-function neighbors(w: World, p: Vec3): Vec3[] {
+/** height = kolik kostek je postava vysoká (děti 2, pejsek 1 – vleze i do nízkého domečku). */
+function neighbors(w: World, p: Vec3, height: number): Vec3[] {
   const out: Vec3[] = [];
   for (const [dx, dz] of [
     [1, 0],
@@ -40,17 +41,17 @@ function neighbors(w: World, p: Vec3): Vec3[] {
     // nahoru (lezení po schodu) – hlava nesmí narazit
     for (let dy = MAX_STEP_UP; dy >= 1; dy--) {
       const q = { x, y: p.y + dy, z };
-      if (isStandable(w, q) && !w.has({ x: p.x, y: p.y + dy + 1, z: p.z })) {
+      if (isStandable(w, q, height) && !w.has({ x: p.x, y: p.y + dy + height - 1, z: p.z })) {
         out.push(q);
         break;
       }
     }
     // rovně nebo dolů (přes hranu musí projít i hlava)
-    if (w.has({ x, y: p.y + 1, z })) continue;
+    if (height > 1 && w.has({ x, y: p.y + height - 1, z })) continue;
     for (let dy = 0; dy >= -MAX_STEP_DOWN; dy--) {
       const q = { x, y: p.y + dy, z };
       if (w.has(q)) break;
-      if (isStandable(w, q)) {
+      if (isStandable(w, q, height)) {
         out.push(q);
         break;
       }
@@ -70,7 +71,7 @@ export interface PathResult {
  * Najde cestu (BFS) ze `start` do `goal`. Když cíl není dosažitelný,
  * vrátí cestu na nejbližší dosažitelné místo – postavička nikdy „nezamrzne“.
  */
-export function findPath(w: World, start: Vec3, goal: Vec3): PathResult {
+export function findPath(w: World, start: Vec3, goal: Vec3, height = 2): PathResult {
   const startKey = keyOf(start);
   const goalKey = keyOf(goal);
   const prev = new Map<string, string | null>([[startKey, null]]);
@@ -93,7 +94,7 @@ export function findPath(w: World, start: Vec3, goal: Vec3): PathResult {
       best = cur;
       bestD = d;
     }
-    for (const n of neighbors(w, cur)) {
+    for (const n of neighbors(w, cur, height)) {
       const nk = keyOf(n);
       if (prev.has(nk)) continue;
       prev.set(nk, ck);

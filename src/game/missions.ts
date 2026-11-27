@@ -1,7 +1,17 @@
 import type { BlockType } from './blocks';
-import { bridgeProgress, hasBridge, keyOf, WORLD_H, type Vec3, type World } from './world';
+import { bridgeProgress, doghouseStatus, hasBridge, keyOf, WORLD_H, type Vec3, type World } from './world';
 
-export type MissionId = 'wood5' | 'findRed' | 'bridge';
+export type MissionId = 'wood5' | 'findRed' | 'bridge' | 'feed' | 'doghouse';
+
+/** Zvířátka a jídlo, které mají ráda (mise 4). Barva kostky = jídlo. */
+export type FeedableAnimal = 'sheep' | 'chick' | 'dog';
+export const FEED_ORDER: FeedableAnimal[] = ['sheep', 'chick', 'dog'];
+export const ANIMAL_FOOD: Record<FeedableAnimal, BlockType> = {
+  sheep: 'grass', // zelená tráva
+  chick: 'sand', // žlutá zrníčka
+  dog: 'wood', // hnědé granulky
+};
+export const isFeedable = (k: string): k is FeedableAnimal => k in ANIMAL_FOOD;
 
 export interface MissionState {
   id: MissionId;
@@ -11,13 +21,16 @@ export interface MissionState {
   targets: Vec3[];
   /** Kolikrát dítě použilo jiný materiál – jen pro dávkování nápovědy. */
   otherTries: number;
+  /** Nakrmená zvířátka (mise 4). */
+  fed?: FeedableAnimal[];
   done: boolean;
 }
 
 export type GameEvent =
   | { kind: 'placed'; block: BlockType; pos: Vec3 }
   | { kind: 'removed'; block: BlockType; pos: Vec3 }
-  | { kind: 'collected'; pos: Vec3 };
+  | { kind: 'collected'; pos: Vec3 }
+  | { kind: 'fed'; animal: FeedableAnimal; food: BlockType };
 
 /**
  * Zpětná vazba pro controller:
@@ -45,6 +58,8 @@ export const MISSIONS: MissionDef[] = [
   { id: 'wood5', number: 1, target: 5, suggestedBlock: 'wood' },
   { id: 'findRed', number: 2, target: 3 },
   { id: 'bridge', number: 3, target: 2, suggestedBlock: 'wood' },
+  { id: 'feed', number: 4, target: 3 },
+  { id: 'doghouse', number: 5, target: 4, suggestedBlock: 'wood' },
 ];
 
 export const getMission = (id: MissionId): MissionDef => {
@@ -98,6 +113,13 @@ export function startMission(id: MissionId, world: World, rng: () => number = Ma
     state.progress = Math.min(bridgeProgress(world).covered, def.target - 1);
   }
 
+  if (id === 'feed') state.fed = [];
+
+  if (id === 'doghouse') {
+    // Už postavené kostky se počítají, ale úplně hotovou misi hned neukončíme.
+    state.progress = Math.min(doghouseStatus(world).filled, def.target - 1);
+  }
+
   return state;
 }
 
@@ -146,6 +168,30 @@ export function reduceMission(state: MissionState, event: GameEvent, world: Worl
       const progress = Math.max(state.progress, covered);
       const feedback: MissionFeedback = progress > state.progress ? 'progress' : 'none';
       return { state: { ...state, progress }, feedback };
+    }
+
+    case 'feed': {
+      if (event.kind !== 'fed') return { state, feedback: 'none' };
+      const fed = state.fed ?? [];
+      if (fed.includes(event.animal)) return { state, feedback: 'none' };
+      if (event.food !== ANIMAL_FOOD[event.animal]) {
+        return { state: { ...state, otherTries: state.otherTries + 1 }, feedback: 'gentle-hint' };
+      }
+      const nextFed = [...fed, event.animal];
+      const done = nextFed.length >= state.target;
+      return { state: { ...state, fed: nextFed, progress: nextFed.length, done }, feedback: done ? 'complete' : 'progress' };
+    }
+
+    case 'doghouse': {
+      if (event.kind !== 'placed' && event.kind !== 'removed') return { state, feedback: 'none' };
+      const st = doghouseStatus(world);
+      if (st.done) return { state: { ...state, progress: state.target, done: true }, feedback: 'complete' };
+      // Zastavěné dveře nebo vnitřek = jemná rada, nic se nebere.
+      if (event.kind === 'placed' && (!st.insideFree || !st.doorFree)) {
+        return { state: { ...state, otherTries: state.otherTries + 1 }, feedback: 'gentle-hint' };
+      }
+      const progress = Math.max(state.progress, Math.min(st.filled, state.target - 1));
+      return { state: { ...state, progress }, feedback: progress > state.progress ? 'progress' : 'none' };
     }
   }
 }

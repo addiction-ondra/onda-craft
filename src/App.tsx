@@ -3,6 +3,7 @@ import { GameController } from './controller/GameController';
 import { Hud } from './ui/Hud';
 import { BreakOverlay, MissionIntro, MissionMenu, StartScreen, Success } from './ui/Overlays';
 import { ParentZone } from './ui/ParentZone';
+import { QuizOverlay } from './ui/QuizOverlay';
 
 export default function App() {
   const [game] = useState(() => new GameController());
@@ -24,6 +25,7 @@ export default function App() {
       {o?.kind === 'success' && <Success game={game} ui={ui} id={o.mission} />}
       {o?.kind === 'parents' && <ParentZone game={game} ui={ui} />}
       {o?.kind === 'break' && <BreakOverlay game={game} />}
+      {o?.kind === 'quiz' && <QuizOverlay game={game} quiz={o.quiz} wrong={o.wrong} solved={o.solved} help={o.help} />}
       {!ui.started && <StartScreen game={game} />}
     </div>
   );

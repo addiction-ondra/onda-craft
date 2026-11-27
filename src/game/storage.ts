@@ -1,6 +1,6 @@
 import { blockFromIndex, blockIndex, type BlockType } from './blocks';
 import { isCharacterId, type CharacterState } from './characters';
-import { MISSIONS, type MissionId, type MissionState } from './missions';
+import { isFeedable, MISSIONS, type MissionId, type MissionState } from './missions';
 import { sanitizeSettings, type Settings } from './settings';
 import { inBounds, parseKey, upgradeWorldToCastle, World } from './world';
 
@@ -67,7 +67,8 @@ function validMission(raw: unknown): MissionState | null {
   const m = raw as MissionState;
   if (!missionIds.has(m.id) || typeof m.progress !== 'number' || typeof m.target !== 'number') return null;
   if (!Array.isArray(m.targets)) return null;
-  return { ...m, otherTries: m.otherTries ?? 0, done: !!m.done };
+  const fed = Array.isArray(m.fed) ? m.fed.filter(isFeedable) : undefined;
+  return { ...m, otherTries: m.otherTries ?? 0, fed, done: !!m.done };
 }
 
 /** Rozbalí uložená data. Poškozená data nikdy neshodí hru – vrátí se výchozí stav. */

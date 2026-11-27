@@ -59,5 +59,8 @@ Před commitem vždy: `npm run lint && npm test && npm run build`.
 - Postavičky chodí jen po cestě z `findPath` (žádné teleporty ani lezení po zdech).
   Stavby ve výchozím světě musí jít vidět a „ťuknout“ z kamery (45°) – vysoké zdi
   kolem malého prostoru ho schovají; ověř smoke testem.
+- Svítící místa (ghosty z `effects.setGhosts`) jsou klikací: ťuknutí položí kostku přímo do nich
+  (i „ve vzduchu“). Když je cíl mise schovaný za hradem, natoč na něj kameru (`view.focusOn`).
+- Nová úloha do beden s otazníkem: rozšířit `quiz.ts` (data), `cs.ts` (hlas) a `ui/QuizOverlay.tsx`.
 - Výkon: kostky jen přes `InstancedMesh`, žádné stíny, `pixelRatio ≤ 2`, render
   jen když je něco „dirty“ nebo běží animace.

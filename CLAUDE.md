@@ -1,4 +1,4 @@
-# CLAUDE.md – pravidla vývoje ONDA CRAFT
+# CLAUDE.md – pravidla vývoje Ondra a Laura Craft
 
 Hra pro čtyřleté dítě. Každá změna se posuzuje otázkou: **„Zvládne to samo
 čtyřleté dítě na iPadu, bez čtení a bez frustrace?“**

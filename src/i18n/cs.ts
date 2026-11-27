@@ -3,7 +3,7 @@ import type { MissionId } from '../game/missions';
 
 /** Všechny texty a hlasové hlášky hry. Krátké věty, jednoduchá slova. */
 export const CS = {
-  appName: 'ONDA CRAFT',
+  appName: 'Ondra a Laura Craft',
 
   blockNames: {
     grass: 'tráva',

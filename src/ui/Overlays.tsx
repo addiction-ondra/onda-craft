@@ -7,6 +7,7 @@ import { iconFor } from './blockIcons';
 import { IconBuild, IconClose, IconKey, IconPlay, IconSpeaker, IconStar } from './Icons';
 import { MissionDemo } from './MissionDemo';
 import { MissionIcon } from './MissionIcon';
+import { BlockTitle } from './BlockTitle';
 
 interface Props {
   game: GameController;
@@ -22,8 +23,9 @@ export function StartScreen({ game }: { game: GameController }) {
             <img key={t} src={iconFor(t)} alt="" style={{ animationDelay: `${i * 0.12}s` }} />
           ))}
         </div>
-        <h1>
-          <span>ONDA</span> <span>CRAFT</span>
+        <h1 className="block-title" aria-label={CS.appName}>
+          <BlockTitle text="ONDRA A LAURA" style="stone" className="title-line1" />
+          <BlockTitle text="CRAFT" style="grass" className="title-line2" />
         </h1>
       </div>
       <button className="play-btn" aria-label={CS.ui.play} onClick={() => game.start()}>

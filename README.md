@@ -1,4 +1,4 @@
-# ONDA CRAFT 🧱
+# Ondra a Laura Craft 🧱
 
 Vzdělávací 3D kostičková stavebnice pro předškoláky (cca 4 roky).
 Barevný voxelový ostrov s řekou, stromy, domečkem a zvířátky – pejskem Freným,
@@ -10,6 +10,12 @@ ovečkou a kuřátkem. Ovládání dotykem, minimum textu, české hlasové poky
 - Optimalizováno pro **iPad a iPhone** (Safari, přidání na plochu).
 
 Architektura a roadmapa: [PLAN.md](PLAN.md) · pravidla vývoje: [CLAUDE.md](CLAUDE.md)
+
+## Co umí verze 0.6
+
+- Hra se jmenuje **Ondra a Laura Craft**. Úvodní nápis je kostičkový 3D (vlastní pixelové
+  písmo z kostek – kamenný řádek „ONDRA A LAURA“ a travnato-hliněný „CRAFT“).
+- Ikona na ploše iPadu se jmenuje „Ondra a Laura“.
 
 ## Co umí verze 0.5.2
 

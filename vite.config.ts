@@ -16,8 +16,8 @@ export default defineConfig({
       injectRegister: false,
       includeAssets: ['icons/apple-touch-icon.png', 'icons/favicon.svg'],
       manifest: {
-        name: 'ONDA CRAFT',
-        short_name: 'ONDA CRAFT',
+        name: 'Ondra a Laura Craft',
+        short_name: 'Ondra a Laura',
         description: 'Kostičková stavebnice pro malé stavitele',
         lang: 'cs',
         theme_color: '#7cc8f0',

@@ -1,4 +1,4 @@
-# ONDA CRAFT – plán projektu
+# Ondra a Laura Craft – plán projektu
 
 Vzdělávací 3D voxelová stavebnice pro předškoláky (cca 4 roky). Inspirováno
 žánrem „kostičkových“ stavebnic, ale s vlastní grafikou, vlastními texturami

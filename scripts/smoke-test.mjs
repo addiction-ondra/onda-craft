@@ -1,4 +1,4 @@
-// Smoke test ONDA CRAFT v Chromiu (Playwright).
+// Smoke test Ondra a Laura Craft v Chromiu (Playwright).
 // Spouští produkční náhled (`vite preview`), hraje základní mechaniky a ukládá screenshoty do test-results/.
 // Použití: npm run build && npm run test:e2e
 import { chromium, devices } from 'playwright';

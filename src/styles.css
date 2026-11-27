@@ -1791,3 +1791,37 @@ h3 {
     opacity: 0;
   }
 }
+
+/* ------------------------------------------------------------ kostičkový název hry */
+
+.logo h1.block-title {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(6px, 1.6vmin, 16px);
+  text-shadow: none;
+  margin: 0;
+}
+
+.block-title svg {
+  display: block;
+  height: auto;
+  filter: drop-shadow(0 8px 0 rgba(0, 0, 0, 0.18)) drop-shadow(0 14px 18px rgba(0, 0, 0, 0.18));
+}
+
+.title-line1 {
+  width: min(88vw, 820px);
+  animation: title-drop 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.title-line2 {
+  width: min(46vw, 400px);
+  animation: title-drop 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) 0.25s both;
+}
+
+@keyframes title-drop {
+  from {
+    transform: translateY(-40px) scale(0.9);
+    opacity: 0;
+  }
+}

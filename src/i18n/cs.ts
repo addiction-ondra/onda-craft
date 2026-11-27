@@ -44,8 +44,15 @@ export const CS = {
     missionsMenu: 'Vyber si úkol.',
     praise: ['Výborně!', 'Paráda!', 'Skvělá práce!', 'To se ti povedlo!', 'Jsi šikula!'],
     breakTime: 'Stavíš už dlouho. Co si dát pauzu, protáhnout se a napít?',
+    characters: {
+      ondra: { name: 'Ondra', hello: 'Ahoj, já jsem Ondra! Ťukni, kam mám jít.' },
+      lauriska: { name: 'Lauriska', hello: 'Ahoj, já jsem Lauriska! Kam půjdeme?' },
+    },
+    walk: ['Jdu tam!', 'Už běžím!', 'Hned tam budu!', 'Jdeme na to!'],
+    cantReach: 'Tam nedojdu. Postav mi schody nebo most!',
+    inCastle: 'Hurá, jsem na hradě!',
     animals: {
-      dog: 'Haf haf! Já jsem pejsek Freny.',
+      dog: 'Haf haf! Já jsem buldoček Freny.',
       sheep: 'Bééé! Já jsem ovečka.',
       chick: 'Píp píp! Já jsem kuřátko.',
     },

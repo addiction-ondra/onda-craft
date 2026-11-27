@@ -11,6 +11,15 @@ ovečkou a kuřátkem. Ovládání dotykem, minimum textu, české hlasové poky
 
 Architektura a roadmapa: [PLAN.md](PLAN.md) · pravidla vývoje: [CLAUDE.md](CLAUDE.md)
 
+## Co umí verze 0.2
+
+- **Hrad** s věžemi, hradbami a bránou – postavičky do něj můžou dojít.
+- **Postavičky Ondra a Lauriska:** ťukni na postavičku (nebo na její obličej
+  vpravo nahoře), pak ťukni kamkoli do mapy – postavička tam dojde. Přes řeku
+  jen po mostě, na vysoké kostky jen po schodech.
+- **Pejsek Freny** je bílý francouzský buldoček s hnědým čumákem a flíčky.
+- Uložený svět z verze 0.1 dostane hrad automaticky (stavby mimo hrad zůstanou).
+
 ## Co umí verze 0.1 (MVP)
 
 | Funkce | |
@@ -33,7 +42,8 @@ Architektura a roadmapa: [PLAN.md](PLAN.md) · pravidla vývoje: [CLAUDE.md](CLA
 2. Dole vyber kostku, ťukni na zem nebo na jinou kostku – kostka přibude.
 3. Gumou (růžová ikona vlevo) kostky schováš. Zem zůstane vždy.
 4. Vlajka vlevo nahoře = úkoly. Hvězdička = splněný úkol.
-5. Ozubené kolečko vpravo nahoře = nastavení pro rodiče.
+5. Obličej Ondry nebo Laurisky vpravo nahoře (nebo ťuknutí na postavičku) → pak ťukni, kam má jít.
+6. Ozubené kolečko vpravo nahoře = nastavení pro rodiče.
 
 ## Lokální spuštění
 

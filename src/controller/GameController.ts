@@ -14,10 +14,12 @@ import {
 } from '../game/missions';
 import { DEFAULT_SETTINGS, HINT_DELAY_MS, type Settings } from '../game/settings';
 import { loadFromStorage, saveToStorage } from '../game/storage';
-import { bridgeProgress, generateDefaultWorld, RIVER_Z, type Vec3, type World } from '../game/world';
+import { bridgeProgress, generateDefaultWorld, isInCastle, RIVER_Z, type Vec3, type World } from '../game/world';
 import { CS } from '../i18n/cs';
 import { SceneView } from '../render/SceneView';
-import type { Animal } from '../render/animals';
+import type { Animal, AnimalKind } from '../render/animals';
+import { CHARACTER_IDS, resolveCharacterPos, type CharacterId, type CharacterState } from '../game/characters';
+import { findPath, walkGoalFromTap } from '../game/pathfinding';
 
 export type Mode = 'build' | 'erase';
 
@@ -39,6 +41,8 @@ export interface UiSnapshot {
   overlay: Overlay;
   /** Materiál, který má v paletě pulzovat (nápověda). */
   highlightMaterial: BlockType | null;
+  /** Postavička, která čeká, kam má jít. */
+  selectedCharacter: CharacterId | null;
   hasCzechVoice: boolean;
   speechSupported: boolean;
 }
@@ -62,6 +66,8 @@ export class GameController {
   private lastGroundMsg = 0;
   private ghostTimer: number | undefined;
   private storage: Storage | null;
+  private characters = new Map<CharacterId, Animal>();
+  private savedCharacters: CharacterState[];
 
   constructor() {
     this.storage = (() => {
@@ -73,6 +79,7 @@ export class GameController {
     })();
     const loaded = this.storage ? loadFromStorage(this.storage) : null;
     this.world = loaded?.world ?? generateDefaultWorld();
+    this.savedCharacters = loaded?.characters ?? [];
     this.mission = loaded?.activeMission && !loaded.activeMission.done ? loaded.activeMission : null;
     if (this.mission) restoreMission(this.mission, this.world);
 
@@ -85,6 +92,7 @@ export class GameController {
       settings: loaded?.settings ?? { ...DEFAULT_SETTINGS },
       overlay: null,
       highlightMaterial: null,
+      selectedCharacter: null,
       hasCzechVoice: this.speech.hasCzechVoice,
       speechSupported: this.speech.supported,
     };
@@ -121,9 +129,17 @@ export class GameController {
     if (this.view) return;
     this.view = new SceneView(container, this.world);
     this.view.onTap = (x, y) => this.handleTap(x, y);
-    this.view.addAnimal('dog', 6, 10);
-    this.view.addAnimal('sheep', 2, 6);
-    this.view.addAnimal('chick', 12, 4);
+    const animals: Array<[AnimalKind, number, number]> = [
+      ['dog', 5, 11],
+      ['sheep', 2, 6],
+      ['chick', 7, 4],
+    ];
+    for (const [kind, x, z] of animals) this.view.addAnimal(kind, { x, y: 1, z });
+    this.characters.clear();
+    for (const id of CHARACTER_IDS) {
+      const saved = this.savedCharacters.find((c) => c.id === id)?.pos;
+      this.characters.set(id, this.view.addAnimal(id, resolveCharacterPos(this.world, id, saved)));
+    }
     this.refreshMissionVisuals();
     this.tickTimer = window.setInterval(this.tick, 1000);
     if (new URLSearchParams(location.search).has('test')) {
@@ -133,6 +149,7 @@ export class GameController {
 
   unmount(): void {
     this.saveNow();
+    this.savedCharacters = this.characterStates();
     window.clearInterval(this.tickTimer);
     this.view?.dispose();
     this.view = null;
@@ -289,6 +306,9 @@ export class GameController {
     this.mission = null;
     this.world = generateDefaultWorld();
     this.view?.setWorld(this.world);
+    for (const [id, a] of this.characters) a.teleport(resolveCharacterPos(this.world, id));
+    this.view?.effects.setWalkTarget(null);
+    this.selectCharacter(null, true);
     this.set({ mission: null, highlightMaterial: null });
     this.saveNow();
   }
@@ -331,11 +351,23 @@ export class GameController {
     if (!hit) return;
 
     if (hit.kind === 'animal') {
-      this.pokeAnimal(hit.animal);
+      const a = hit.animal;
+      if (a.isCharacter) {
+        const id = a.kind as CharacterId;
+        this.selectCharacter(this.snapshot.selectedCharacter === id ? null : id);
+      } else {
+        this.pokeAnimal(a);
+      }
       return;
     }
 
     const { pos, normal, block } = hit;
+
+    // Vybraná postavička: ťuknutí do mapy = „jdi sem“ (místo stavění).
+    if (this.snapshot.selectedCharacter) {
+      this.walkCharacter(this.snapshot.selectedCharacter, pos, normal);
+      return;
+    }
 
     // Mise „Najdi červené kostky“: ťuknutí na hledanou kostku ji „najde“ v jakémkoli režimu.
     if (isMissionTarget(this.mission, pos)) {
@@ -380,10 +412,44 @@ export class GameController {
     }
   }
 
+  /** Vybere postavičku (ťuknutí na ni nebo na její tlačítko). null = zrušit výběr. */
+  selectCharacter(id: CharacterId | null, silent = false): void {
+    this.markActivity();
+    for (const [cid, a] of this.characters) a.setSelected(cid === id);
+    this.set({ selectedCharacter: id });
+    if (!id || silent) return;
+    this.characters.get(id)?.poke();
+    this.sfx.play('select');
+    this.say(CS.voice.characters[id].hello);
+  }
+
+  private walkCharacter(id: CharacterId, pos: Vec3, normal: Vec3): void {
+    const a = this.characters.get(id);
+    if (!a || !this.view) return;
+    const start = a.standCell;
+    const goal = walkGoalFromTap(this.world, pos, normal);
+    const { path, reached } = findPath(this.world, start, goal);
+    const end = path.length ? path[path.length - 1] : start;
+    const wasInCastle = isInCastle(start);
+    this.view.effects.setWalkTarget(end);
+    this.sfx.play('click');
+    this.say(reached ? pickOne(CS.voice.walk) : CS.voice.cantReach);
+    a.walk(path, () => {
+      this.view?.effects.setWalkTarget(null);
+      if (!wasInCastle && isInCastle(a.standCell)) {
+        this.sfx.play('collect');
+        this.say(CS.voice.inCastle);
+      }
+      this.scheduleSave();
+    });
+    // Po zadání cesty se výběr zruší – další ťuknutí zase staví.
+    this.selectCharacter(null, true);
+  }
+
   private pokeAnimal(a: Animal): void {
     a.poke();
     this.sfx.play('animal');
-    this.say(CS.voice.animals[a.kind]);
+    this.say(CS.voice.animals[a.kind as AnimalKind]);
   }
 
   private dispatch(ev: GameEvent): void {
@@ -474,8 +540,14 @@ export class GameController {
       completed: this.snapshot.completed,
       settings: this.snapshot.settings,
       material: this.snapshot.material,
+      characters: this.characterStates(),
     });
   };
+
+  private characterStates(): CharacterState[] {
+    if (this.characters.size === 0) return this.savedCharacters;
+    return [...this.characters].map(([id, a]) => ({ id, pos: a.standCell }));
+  }
 
   private onVisibility = (): void => {
     if (document.visibilityState === 'hidden') {

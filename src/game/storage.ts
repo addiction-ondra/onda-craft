@@ -1,10 +1,16 @@
 import { blockFromIndex, blockIndex, type BlockType } from './blocks';
+import { isCharacterId, type CharacterState } from './characters';
 import { MISSIONS, type MissionId, type MissionState } from './missions';
 import { sanitizeSettings, type Settings } from './settings';
-import { inBounds, parseKey, World } from './world';
+import { inBounds, parseKey, upgradeWorldToCastle, World } from './world';
 
 export const SAVE_KEY = 'ondacraft:save';
-export const SAVE_VERSION = 1;
+/**
+ * Verze formátu:
+ * 1 – v0.1 (domeček na jihu)
+ * 2 – v0.2 (hrad, postavičky Ondra a Lauriska); v1 svět se převede přes upgradeWorldToCastle
+ */
+export const SAVE_VERSION = 2;
 
 export interface SaveData {
   version: number;
@@ -14,6 +20,7 @@ export interface SaveData {
   completed: MissionId[];
   settings: Settings;
   material: BlockType;
+  characters: CharacterState[];
   savedAt: number;
 }
 
@@ -23,6 +30,7 @@ export interface GameSnapshotForSave {
   completed: MissionId[];
   settings: Settings;
   material: BlockType;
+  characters?: CharacterState[];
 }
 
 export function serialize(s: GameSnapshotForSave): SaveData {
@@ -38,6 +46,7 @@ export function serialize(s: GameSnapshotForSave): SaveData {
     completed: s.completed,
     settings: s.settings,
     material: s.material,
+    characters: s.characters ?? [],
     savedAt: Date.now(),
   };
 }
@@ -48,6 +57,7 @@ export interface LoadedGame {
   completed: MissionId[];
   settings: Settings;
   material: BlockType | null;
+  characters: CharacterState[];
 }
 
 const missionIds = new Set<string>(MISSIONS.map((m) => m.id));
@@ -62,7 +72,7 @@ function validMission(raw: unknown): MissionState | null {
 
 /** Rozbalí uložená data. Poškozená data nikdy neshodí hru – vrátí se výchozí stav. */
 export function deserialize(raw: string | null): LoadedGame {
-  const empty: LoadedGame = { world: null, activeMission: null, completed: [], settings: sanitizeSettings(null), material: null };
+  const empty: LoadedGame = { world: null, activeMission: null, completed: [], settings: sanitizeSettings(null), material: null, characters: [] };
   if (!raw) return empty;
   let data: Partial<SaveData>;
   try {
@@ -70,8 +80,9 @@ export function deserialize(raw: string | null): LoadedGame {
   } catch {
     return empty;
   }
-  if (!data || typeof data !== 'object' || data.version !== SAVE_VERSION) {
-    // Zde budou migrace starších verzí. Neznámá verze ⇒ zachováme aspoň nastavení.
+  const version = data && typeof data === 'object' ? data.version : undefined;
+  if (version !== 1 && version !== SAVE_VERSION) {
+    // Neznámá verze ⇒ zachováme aspoň nastavení.
     return { ...empty, settings: sanitizeSettings(data?.settings) };
   }
 
@@ -85,7 +96,23 @@ export function deserialize(raw: string | null): LoadedGame {
       const p = { x, y, z };
       if (t && inBounds(p)) world.setRaw(p, t);
     }
+    // v0.1 → v0.2: do uloženého světa přibude hrad a domeček na severu.
+    if (version === 1) upgradeWorldToCastle(world);
     world.version = 0;
+  }
+
+  let activeMission = validMission(data.activeMission);
+  // Schované červené kostky z v0.1 mohou být v místě nového hradu – misi raději zrušíme.
+  if (version === 1 && activeMission?.id === 'findRed') activeMission = null;
+
+  const characters: CharacterState[] = [];
+  if (Array.isArray(data.characters)) {
+    for (const c of data.characters) {
+      const p = c?.pos;
+      if (isCharacterId(c?.id) && p && [p.x, p.y, p.z].every(Number.isInteger) && inBounds(p)) {
+        characters.push({ id: c.id, pos: { x: p.x, y: p.y, z: p.z } });
+      }
+    }
   }
 
   const completed = Array.isArray(data.completed) ? data.completed.filter((id): id is MissionId => missionIds.has(id)) : [];
@@ -93,10 +120,11 @@ export function deserialize(raw: string | null): LoadedGame {
 
   return {
     world,
-    activeMission: validMission(data.activeMission),
+    activeMission,
     completed,
     settings: sanitizeSettings(data.settings),
     material,
+    characters,
   };
 }
 

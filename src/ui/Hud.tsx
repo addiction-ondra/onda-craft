@@ -1,5 +1,6 @@
 import type { GameController, UiSnapshot } from '../controller/GameController';
 import { PALETTE } from '../game/blocks';
+import { CHARACTER_IDS } from '../game/characters';
 import { MISSIONS } from '../game/missions';
 import { CS } from '../i18n/cs';
 import { iconFor } from './blockIcons';
@@ -98,9 +99,27 @@ function TopBar({ game, ui }: Props) {
           </span>
         </button>
       )}
-      <button className="parent-btn" aria-label={CS.ui.parents} onClick={() => game.openParents()}>
-        <IconGear />
-      </button>
+      <div className="top-right">
+        <div className="char-btns">
+          {CHARACTER_IDS.map((id) => (
+            <button
+              key={id}
+              className={`char-btn ${ui.selectedCharacter === id ? 'selected' : ''}`}
+              aria-label={CS.voice.characters[id].name}
+              aria-pressed={ui.selectedCharacter === id}
+              onClick={() => game.selectCharacter(ui.selectedCharacter === id ? null : id)}
+            >
+              <span className="char-face" aria-hidden>
+                {id === 'ondra' ? '👦' : '👧'}
+              </span>
+              <span className="char-name">{CS.voice.characters[id].name}</span>
+            </button>
+          ))}
+        </div>
+        <button className="parent-btn" aria-label={CS.ui.parents} onClick={() => game.openParents()}>
+          <IconGear />
+        </button>
+      </div>
     </div>
   );
 }

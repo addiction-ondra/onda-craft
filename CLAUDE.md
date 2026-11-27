@@ -56,5 +56,8 @@ Před commitem vždy: `npm run lint && npm test && npm run build`.
 - Změna formátu uložených dat ⇒ zvýšit `SAVE_VERSION` a doplnit migraci v `storage.ts`.
 - Nové mise: přidat do `MISSIONS` v `missions.ts` (čistý reducer), texty do `cs.ts`,
   ukázku do `ui/MissionDemo.tsx`, testy do `missions.test.ts`.
+- Postavičky chodí jen po cestě z `findPath` (žádné teleporty ani lezení po zdech).
+  Stavby ve výchozím světě musí jít vidět a „ťuknout“ z kamery (45°) – vysoké zdi
+  kolem malého prostoru ho schovají; ověř smoke testem.
 - Výkon: kostky jen přes `InstancedMesh`, žádné stíny, `pixelRatio ≤ 2`, render
   jen když je něco „dirty“ nebo běží animace.

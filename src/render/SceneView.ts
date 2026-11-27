@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { BLOCK_TYPES, type BlockType } from '../game/blocks';
 import { WORLD_D, WORLD_H, WORLD_W, parseKey, type Vec3, type World } from '../game/world';
-import { Animal, type AnimalKind } from './animals';
+import { Animal, type CreatureKind } from './animals';
 import { Effects } from './effects';
 import { blockCanvases, blockMaterials } from './textures';
 
@@ -11,7 +11,7 @@ export type PickResult =
   | null;
 
 const CAPACITY = WORLD_W * WORLD_D * WORLD_H;
-const ELEVATION = THREE.MathUtils.degToRad(34);
+const ELEVATION = THREE.MathUtils.degToRad(45);
 const MIN_ZOOM = 0.75;
 const MAX_ZOOM = 2.6;
 /** Pohyb prstu (px), do kterého se gesto ještě počítá jako ťuknutí. */
@@ -145,8 +145,9 @@ export class SceneView {
   }
 
 
-  addAnimal(kind: AnimalKind, x: number, z: number): Animal {
-    const a = new Animal(kind, x, z, this.world);
+  /** Přidá zvířátko nebo postavičku na dané místo. */
+  addAnimal(kind: CreatureKind, start: Vec3): Animal {
+    const a = new Animal(kind, start, this.world);
     this.animals.push(a);
     this.scene.add(a.group);
     return a;
@@ -313,9 +314,9 @@ export class SceneView {
     );
     const blockHits = this.raycaster.intersectObjects([...this.meshes.values()], false);
     const blockHit = blockHits.find((h) => h.instanceId !== undefined && h.face);
-    const animalHit = animalHits.find((h) => h.object.userData.animal && h.object.type === 'Mesh' && !(h.object as THREE.Mesh).geometry.type.startsWith('Circle'));
+    const animalHit = animalHits.find((h) => h.object.userData.animal);
 
-    if (animalHit && (!blockHit || animalHit.distance <= blockHit.distance + 0.3)) {
+    if (animalHit && (!blockHit || animalHit.distance <= blockHit.distance + 0.6)) {
       return { kind: 'animal', animal: animalHit.object.userData.animal as Animal };
     }
     if (!blockHit) return null;
@@ -336,7 +337,11 @@ export class SceneView {
 
   // ------------------------------------------------------------------ smyčka
 
-  private blockedForAnimals = (x: number, z: number) => this.animals.some((a) => a.cell.x === x && a.cell.z === z);
+  private blockedForAnimals = (x: number, z: number) =>
+    this.animals.some((a) => {
+      const c = a.standCell;
+      return c.x === x && c.z === z;
+    });
 
   private loop = (): void => {
     this.frame = requestAnimationFrame(this.loop);

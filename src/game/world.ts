@@ -135,14 +135,52 @@ export function bridgeProgress(world: World): { x: number; covered: number } {
 // ---------------------------------------------------------------------------
 // Výchozí svět
 // ---------------------------------------------------------------------------
+//
+//  z=0  ┌────────────────┐   sever: stromy, domeček
+//       │ T   T     HHHH │
+//       │           HHHH │
+//  z=7  │≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈│   řeka
+//  z=8  │≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈│
+//  z=9  │ssss  CCCCCCCC  │   jih: hrad (brána na východ, k výchozí kameře)
+//       │ T    C      G  │
+//  z=15 └────────────────┘
 
 export const TREE_SPOTS: Array<[number, number]> = [
   [2, 2],
-  [13, 2],
-  [6, 3],
-  [2, 12],
-  [14, 11],
+  [6, 2],
+  [15, 1],
+  [2, 13],
 ];
+
+export interface Rect {
+  x0: number;
+  z0: number;
+  x1: number;
+  z1: number;
+}
+
+/** Domeček na severním břehu, dveře směrem k řece. */
+export const HOUSE: Readonly<Rect> = { x0: 10, z0: 1, x1: 13, z1: 4 };
+
+/** Hrad na jižním břehu. Věže v rozích, brána ve východní zdi. */
+export const CASTLE: Readonly<Rect> = { x0: 6, z0: 9, x1: 13, z1: 14 };
+const CASTLE_WALL_H = 2;
+const TOWER_H = 4;
+
+
+/** Věže jsou štíhlé (1×1) v rozích – široké věže by zakrývaly nádvoří. */
+const isTower = (x: number, z: number): boolean => {
+  const { x0, z0, x1, z1 } = CASTLE;
+  return (x === x0 || x === x1) && (z === z0 || z === z1);
+};
+
+/** Brána: východní zeď, dvě pole uprostřed, dvě kostky vysoká. */
+export const isCastleGate = (x: number, y: number, z: number): boolean =>
+  x === CASTLE.x1 && (z === CASTLE.z0 + 2 || z === CASTLE.z0 + 3) && y >= 1 && y <= 2;
+
+/** Nádvoří hradu (uvnitř zdí). */
+export const isInCastle = (p: Vec3): boolean =>
+  p.x > CASTLE.x0 && p.x < CASTLE.x1 && p.z > CASTLE.z0 && p.z < CASTLE.z1 && !isTower(p.x, p.z);
 
 function addTree(w: World, x: number, z: number): void {
   for (let y = 1; y <= 3; y++) w.setRaw({ x, y, z }, 'log');
@@ -158,25 +196,63 @@ function addTree(w: World, x: number, z: number): void {
   w.setRaw({ x, y: 5, z }, 'leaves');
 }
 
-/** Domeček: zdi 4×4, dveře vpředu (směr k řece), plochá střecha. */
-export const HOUSE: Readonly<{ x0: number; z0: number; x1: number; z1: number }> = { x0: 8, z0: 11, x1: 11, z1: 14 };
+/** Odstraní strom (kmen + korunu) – jen přírodní kostky, stavby dítěte nechá být. */
+function removeTree(w: World, x: number, z: number): void {
+  for (let dx = -1; dx <= 1; dx++)
+    for (let dz = -1; dz <= 1; dz++)
+      for (let y = 1; y <= 5; y++) {
+        const p = { x: x + dx, y, z: z + dz };
+        const t = w.get(p);
+        if (t === 'log' || t === 'leaves') w.deleteRaw(p);
+      }
+}
 
-function addHouse(w: World): void {
+/** Domeček: zdi, dveře k řece (jižní strana), okno, plochá střecha a komín. */
+function addHouse(w: World, onlyEmpty = false): void {
   const { x0, z0, x1, z1 } = HOUSE;
+  const put = (p: Vec3, t: BlockType) => {
+    if (!onlyEmpty || !w.has(p)) w.setRaw(p, t);
+  };
   for (let x = x0; x <= x1; x++)
     for (let z = z0; z <= z1; z++) {
       const edge = x === x0 || x === x1 || z === z0 || z === z1;
       if (edge) {
         for (let y = 1; y <= 2; y++) {
-          const isDoor = z === z0 && x === x0 + 1;
+          const isDoor = z === z1 && x === x0 + 1;
           const isWindow = y === 2 && x === x1 && z === z0 + 2;
-          if (!isDoor && !isWindow) w.setRaw({ x, y, z }, 'wall');
+          if (!isDoor && !isWindow) put({ x, y, z }, 'wall');
         }
       }
-      w.setRaw({ x, y: 3, z }, 'roof');
+      put({ x, y: 3, z }, 'roof');
     }
-  // komín
-  w.setRaw({ x: x1 - 1, y: 4, z: z1 - 1 }, 'stone');
+  put({ x: x0 + 1, y: 4, z: z0 + 1 }, 'stone'); // komín
+}
+
+/** Hrad z kamene: hradby s cimbuřím, 4 věže se střechou, brána a volné nádvoří. */
+function addCastle(w: World): void {
+  const { x0, z0, x1, z1 } = CASTLE;
+  for (let x = x0; x <= x1; x++)
+    for (let z = z0; z <= z1; z++) {
+      // vyčistit prostor (i v původním světě)
+      for (let y = 1; y < WORLD_H; y++) w.deleteRaw({ x, y, z });
+      w.setRaw({ x, y: 0, z }, 'grass');
+      const edge = x === x0 || x === x1 || z === z0 || z === z1;
+      if (isTower(x, z)) {
+        for (let y = 1; y <= TOWER_H; y++) w.setRaw({ x, y, z }, 'stone');
+        w.setRaw({ x, y: TOWER_H + 1, z }, 'roof');
+      } else if (edge) {
+        for (let y = 1; y <= CASTLE_WALL_H; y++) if (!isCastleGate(x, y, z)) w.setRaw({ x, y, z }, 'stone');
+        // cimbuří (zuby na hradbách)
+        if ((x + z) % 2 === 0) w.setRaw({ x, y: CASTLE_WALL_H + 1, z }, 'stone');
+      }
+    }
+  // volný prostor před bránou, aby se dalo dojít dovnitř
+  for (let z = z0 + 1; z <= z1 - 1; z++)
+    for (let x = x1 + 1; x < WORLD_W; x++)
+      for (let y = 1; y <= 2; y++) {
+        const t = w.get({ x, y, z });
+        if (t === 'log' || t === 'leaves') w.deleteRaw({ x, y, z });
+      }
 }
 
 export function generateDefaultWorld(): World {
@@ -185,11 +261,25 @@ export function generateDefaultWorld(): World {
     for (let z = 0; z < WORLD_D; z++) w.setRaw({ x, y: 0, z }, isRiver(x, z) ? 'water' : 'grass');
   for (const [x, z] of TREE_SPOTS) addTree(w, x, z);
   addHouse(w);
+  addCastle(w);
   // pískový břeh u řeky
   for (const x of [0, 1, 2, 3]) w.setRaw({ x, y: 0, z: 9 }, 'sand');
   // pár kamenů
   w.setRaw({ x: 4, y: 1, z: 5 }, 'stone');
-  w.setRaw({ x: 13, y: 1, z: 6 }, 'stone');
+  w.setRaw({ x: 8, y: 1, z: 5 }, 'stone');
   w.version = 0;
   return w;
+}
+
+/**
+ * Převod světa z verze 0.1 (domeček na jihu) na verzi 0.2 (hrad na jihu, domeček na severu).
+ * Stavby dítěte mimo oblast hradu zůstanou; v oblasti hradu se nahradí hradem.
+ */
+export function upgradeWorldToCastle(w: World): void {
+  // staré stromy, které překáží hradu a domečku
+  removeTree(w, 14, 11);
+  removeTree(w, 13, 2);
+  addCastle(w);
+  addHouse(w, true);
+  w.version = 0;
 }

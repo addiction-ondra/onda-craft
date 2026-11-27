@@ -36,6 +36,8 @@ src/
 │   ├── blocks.ts         definice typů kostek (barvy, vlastnosti)
 │   ├── world.ts          model světa 16×16×12, generování výchozího světa
 │   ├── missions.ts       definice a vyhodnocování misí (reducer styl)
+│   ├── pathfinding.ts    hledání cesty pro postavičky (BFS, schod max. 1 kostka)
+│   ├── characters.ts     postavičky Ondra a Lauriska, výchozí pozice
 │   ├── settings.ts       rodičovské nastavení + výchozí hodnoty
 │   └── storage.ts        serializace / LocalStorage s verzí formátu
 ├── audio/
@@ -78,7 +80,13 @@ React UI ◄── subscribe/getSnapshot ◄── GameController
 - **6 stavebních materiálů**: dřevo, kámen, červená, tráva, písek, modrá.
 - Další (nestavitelné z palety) typy: kmen, listí, voda, zeď domečku, střecha.
 - **Kamera**: tažení jedním prstem = otáčení, dvěma prsty = přiblížení, velká tlačítka ⟲ ⟳ ＋ －.
-- **Zvířátka** chodí po světě, po ťuknutí poskočí a ozvou se.
+- **Zvířátka** (buldoček Freny, ovečka, kuřátko) chodí po světě, po ťuknutí poskočí a ozvou se.
+- **Postavičky Ondra a Lauriska**: ťuknutí na postavičku (nebo její obličej nahoře) ji vybere,
+  další ťuknutí do mapy = „jdi sem“. Cesta se hledá po zemi, přes most a bránou;
+  vylézt umí o 1 kostku, seskočit až ze 3. Když cíl není dosažitelný, dojde co nejblíž
+  a poradí „Postav mi schody nebo most!“. Pozice se ukládají.
+- **Hrad** na jižním břehu: hradby, 4 věže, brána na východ, volné nádvoří pro postavičky.
+  Hradby jsou nízké a věže štíhlé, aby bylo na nádvoří vidět (kamera 45°).
 - **Automatické ukládání** po každé změně + při skrytí stránky.
 
 ## 5. Vzdělávací mise
@@ -109,7 +117,8 @@ se plní), **nápovědu** (po nečinnosti nebo při jiném materiálu – nikdy 
 ## 7. Roadmapa
 
 - **v0.1 (MVP)** – svět 16×16, 6 materiálů, volné stavění, mise 1–3, hlas, rodičovské nastavení, autosave, PWA. ✅
-- **v0.2** – mise 4 (krmení zvířátek: tráva → ovečka, zrní → kuřátko), mise 5 (domeček pro Frenyho – detekce uzavřeného prostoru se střechou).
-- **v0.3** – mise 6 (čísla: postav věž z N kostek, hlasové počítání), mise 7 (tvary: obtáhni čtverec/obdélník/trojúhelník na zemi).
-- **v0.4** – mise 8 (písmena z kostek, začáteční hlásky), více světů / slotů pro sourozence.
+- **v0.2** – hrad, postavičky Ondra a Lauriska s chozením, buldoček Freny. ✅
+- **v0.3** – mise 4 (krmení zvířátek: tráva → ovečka, zrní → kuřátko), mise 5 (domeček pro Frenyho – detekce uzavřeného prostoru se střechou).
+- **v0.4** – mise 6 (čísla: postav věž z N kostek, hlasové počítání), mise 7 (tvary: obtáhni čtverec/obdélník/trojúhelník na zemi).
+- **v0.5** – mise 8 (písmena z kostek, začáteční hlásky), více světů / slotů pro sourozence.
 - Průběžně: přístupnost (větší kontrast), výkon na starších iPadech, nahrané lidské hlasy jako fallback.

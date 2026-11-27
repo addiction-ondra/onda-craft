@@ -67,6 +67,27 @@ async function tapVisible(page, p, face = 'top') {
   return false;
 }
 
+/** Otáčí světem, dokud není tvor vidět, pak na něj ťukne. Vrací, co ťuknutí trefilo. */
+async function tapCreature(page, which) {
+  for (let rot = 0; rot < 4; rot++) {
+    await settle(page);
+    const r = await page.evaluate((which) => {
+      const c = window.__onda.controller;
+      const a = which === 'dog' ? window.__onda.view.animals[0] : c.characters.get(which);
+      const g = a.group.position;
+      const s = window.__onda.view.projectToScreen({ x: g.x - 0.5, y: g.y - 0.6, z: g.z - 0.5 }, 'top');
+      const hit = window.__onda.view.pick(s.x, s.y);
+      return { s, kind: hit?.kind === 'animal' ? hit.animal.kind : null };
+    }, which);
+    if (r.kind === which) {
+      await page.mouse.click(r.s.x, r.s.y);
+      return true;
+    }
+    await page.getByRole('button', { name: 'Otočit doprava' }).click();
+  }
+  return false;
+}
+
 // ============================================================================
 async function ipadFlow() {
   console.log('\niPad (landscape):');
@@ -173,13 +194,27 @@ async function ipadFlow() {
   await page.getByRole('button', { name: 'Stavět dál' }).click();
 
   // --- zvířátko
-  const dog = await page.evaluate(() => {
-    const a = window.__onda.view.animals[0];
-    const p = a.group.position;
-    return window.__onda.view.projectToScreen({ x: p.x - 0.5, y: p.y - 0.6, z: p.z - 0.5 }, 'top');
-  });
-  const animalHit = await page.evaluate(([x, y]) => window.__onda.view.pick(x, y)?.kind, [dog.x, dog.y]);
+  const animalHit = (await tapCreature(page, 'dog')) ? 'animal' : null;
   ok(animalHit === 'animal', 'ťuknutí na pejska trefí zvířátko');
+
+  // --- postavičky: Ondra dojde bránou na nádvoří hradu
+  await page.getByRole('button', { name: 'Ondra' }).click();
+  ok((await snap(page)).selectedCharacter === 'ondra', 'postavička se vybere tlačítkem s obličejem');
+  await page.screenshot({ path: `${OUT}/12-ondra-selected.png` });
+  const court = { x: 10, y: 0, z: 12 };
+  ok(await tapVisible(page, court), 'nádvoří hradu je vidět a dá se na něj ťuknout');
+  ok((await snap(page)).selectedCharacter === null, 'po zadání cíle se výběr zruší (další ťuknutí zase staví)');
+  ok((await blockAt(page, { x: 10, y: 1, z: 12 })) === null, 'ťuknutí s vybranou postavičkou nepostaví kostku');
+  await page.waitForFunction(() => !window.__onda.controller.characters.get('ondra').walking, null, { timeout: 30000 });
+  const ondra = await page.evaluate(() => window.__onda.controller.characters.get('ondra').standCell);
+  ok(ondra.x === 10 && ondra.y === 1 && ondra.z === 12, `Ondra došel na nádvoří hradu (${JSON.stringify(ondra)})`);
+  await page.screenshot({ path: `${OUT}/13-ondra-in-castle.png` });
+
+  // Lauriska se dá vybrat i ťuknutím přímo na ni ve světě
+  await tapCreature(page, 'lauriska');
+  ok((await snap(page)).selectedCharacter === 'lauriska', 'ťuknutí na Lauriskou ve světě ji vybere');
+  await page.getByRole('button', { name: 'Lauriska' }).click();
+  ok((await snap(page)).selectedCharacter === null, 'druhé ťuknutí výběr zruší');
 
   // --- automatické ukládání + obnova po reloadu
   await sleep(600);
@@ -187,6 +222,8 @@ async function ipadFlow() {
   await page.waitForFunction(() => !!window.__onda);
   ok((await blockAt(page, { x: bx, y: 1, z: 7 })) === 'wood', 'svět se po obnovení stránky načte (most zůstal)');
   ok((await snap(page)).completed.length === 3, 'hvězdičky misí zůstaly uložené');
+  const ondraAfter = await page.evaluate(() => window.__onda.controller.characters.get('ondra').standCell);
+  ok(ondraAfter.x === 10 && ondraAfter.z === 12, 'Ondra zůstal po obnovení stránky na hradě');
   await page.getByRole('button', { name: 'Hrát' }).click();
   await page.screenshot({ path: `${OUT}/09-after-reload.png` });
 

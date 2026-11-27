@@ -287,6 +287,10 @@ img {
   .side.left {
     flex-direction: row;
   }
+  .char-btn {
+    width: 56px;
+    height: 56px;
+  }
 }
 
 /* nízké displeje na šířku (iPhone landscape) */
@@ -300,6 +304,60 @@ img {
   }
 }
 
+/* ------------------------------------------------------------ postavičky */
+
+.top-right {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--gap);
+}
+
+.char-btns {
+  display: flex;
+  gap: var(--gap);
+}
+
+.char-btn {
+  width: var(--btn);
+  height: var(--btn);
+  border-radius: 50%;
+  background: var(--panel);
+  box-shadow: 0 5px 0 rgba(0, 0, 0, 0.15);
+  position: relative;
+  display: grid;
+  place-items: center;
+  transition: transform 0.12s;
+}
+
+.char-face {
+  font-size: calc(var(--btn) * 0.58);
+  line-height: 1;
+}
+
+.char-name {
+  position: absolute;
+  bottom: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 12px;
+  font-weight: 800;
+  background: #fff;
+  border-radius: 8px;
+  padding: 1px 6px;
+  white-space: nowrap;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+}
+
+.char-btn.selected {
+  outline: 5px solid #fcc419;
+  background: #fff9db;
+  animation: pulse 0.9s ease-in-out infinite;
+}
+
+.char-btn:active {
+  transform: translateY(4px) scale(0.97);
+}
+
 /* ------------------------------------------------------------ mise HUD */
 
 .mission-hud {
@@ -311,7 +369,7 @@ img {
   background: var(--panel);
   border-radius: 26px;
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
-  max-width: calc(100vw - 80px - var(--sal) - var(--sar));
+  max-width: calc(100vw - 2 * var(--btn) - 90px - var(--sal) - var(--sar));
   flex-wrap: wrap;
 }
 

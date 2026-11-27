@@ -23,8 +23,24 @@ export class Effects {
   private ghostLineMat = new THREE.LineBasicMaterial({ color: '#f76707', transparent: true, depthTest: false });
   private beaconMat = new THREE.MeshLambertMaterial({ color: '#ffd43b', emissive: '#b8860b' });
 
+  private walkTarget: THREE.Mesh;
+
   constructor() {
     this.group.add(this.ghosts, this.beacons);
+    // značka cíle, kam postavička jde
+    this.walkTarget = new THREE.Mesh(
+      new THREE.RingGeometry(0.18, 0.42, 24),
+      new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: 0.9, depthWrite: false, side: THREE.DoubleSide }),
+    );
+    this.walkTarget.rotation.x = -Math.PI / 2;
+    this.walkTarget.visible = false;
+    this.group.add(this.walkTarget);
+  }
+
+  /** Bílý kroužek tam, kam postavička jde (null = skrýt). */
+  setWalkTarget(p: Vec3 | null): void {
+    this.walkTarget.visible = !!p;
+    if (p) this.walkTarget.position.set(p.x + 0.5, p.y + 0.04, p.z + 0.5);
   }
 
   burst(p: Vec3, color: string, count = 10): void {
@@ -108,6 +124,7 @@ export class Effects {
     this.ghostMat.opacity = 0.35 + 0.35 * wave;
     this.ghostLineMat.opacity = 0.6 + 0.4 * wave;
     for (const g of this.ghosts.children) g.scale.setScalar(0.92 + 0.08 * wave);
+    if (this.walkTarget.visible) this.walkTarget.scale.setScalar(0.85 + 0.2 * wave);
     for (const b of this.beacons.children) {
       b.rotation.y += dt * 2.5;
       b.position.y = b.userData.baseY + Math.sin(this.time * 3) * 0.2;

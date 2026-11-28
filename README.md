@@ -11,6 +11,21 @@ ovečkou a kuřátkem. Ovládání dotykem, minimum textu, české hlasové poky
 
 Architektura a roadmapa: [PLAN.md](PLAN.md) · pravidla vývoje: [CLAUDE.md](CLAUDE.md)
 
+## Co umí verze 0.8 – Pirátský ostrov 🏝️
+
+- **Třetí svět**: s klíčem z Ledového království se loďkou dopluje na Pirátský ostrov
+  (písek, tráva, palmy, laguna, skály). Na moři vedle ostrova kotví **pirátská loď**.
+- Místo beden s otazníkem jsou **sudy** (stejný princip). Frený jede s dětmi i sem.
+- **5 úkolů**: najdi 4 zlaté mince, postav stožár ze 4 dřevěných kostek (počítání),
+  pirátské vlajky červená–žlutá (vzor), postav čtverec (tvar: 4 strany, 4 rohy), molo přes lagunu.
+- **Kostlivec Kostík** (veselý, tančí, fialový šátek) – **pexeso** se 4 dvojicemi (papoušek, kotva, mušle, krab…).
+- **Pirát Fousek** – **barevná lodní bitva**: prakem se posílají barevné balónky na bílé plachty
+  jeho lodi; každý zásah plachtu obarví a hlas řekne barvu. Nic se neničí, po třech plachtách duha a ✔.
+- **Velký poklad**: když jsou splněné všechny úkoly a dítě má **klíče ze všech tří světů**,
+  pod palmou se objeví velké **červené X**. Dítě tam pošle Ondru nebo Lauru → prstem
+  odhrabe písek → truhla → ťuknutím se otevře třemi klíči → koruna, drahokamy, zlato a oslava.
+- Testovací režim v rodičovské zóně umí otevřít i pexeso, lodní bitvu a kopání.
+
 ## Co umí verze 0.7.3
 
 - **Frený chodí za dětmi ve všech světech** – za dítětem, se kterým se zrovna hraje

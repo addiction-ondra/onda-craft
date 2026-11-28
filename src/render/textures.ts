@@ -283,6 +283,47 @@ const crystal: Painter = (g, r) => {
   g.fillRect(S - 1, 0, 1, S);
 };
 
+/** Sud: hnědá prkna se dvěma tmavými obručemi. */
+const barrelSide: Painter = (g, r) => {
+  noise('#a0522d', 0.06)(g, r);
+  g.fillStyle = '#7a3d1c';
+  for (const x of [4, 8, 12]) g.fillRect(x, 0, 1, S);
+  g.fillStyle = '#495057';
+  g.fillRect(0, 3, S, 2);
+  g.fillRect(0, 11, S, 2);
+  g.fillStyle = '#adb5bd';
+  g.fillRect(0, 3, S, 1);
+  g.fillRect(0, 11, S, 1);
+  g.fillStyle = '#5c2b12';
+  g.fillRect(0, 0, 1, S);
+  g.fillRect(S - 1, 0, 1, S);
+};
+const barrelTop: Painter = (g, r) => {
+  noise('#b5651d', 0.06)(g, r);
+  g.fillStyle = '#495057';
+  g.fillRect(0, 0, S, 2);
+  g.fillRect(0, S - 2, S, 2);
+  g.fillRect(0, 0, 2, S);
+  g.fillRect(S - 2, 0, 2, S);
+  g.fillStyle = '#7a3d1c';
+  g.fillRect(5, 2, 1, 12);
+  g.fillRect(10, 2, 1, 12);
+};
+
+/** Zlatá mince / zlatá kostka – lesklá, s hvězdičkou. */
+const goldCoin: Painter = (g, r) => {
+  noise('#fcc419', 0.06)(g, r);
+  g.fillStyle = '#fff3bf';
+  g.fillRect(7, 3, 2, 10);
+  g.fillRect(3, 7, 10, 2);
+  g.fillRect(2, 2, 2, 1);
+  g.fillStyle = '#e67700';
+  g.fillRect(0, 0, S, 1);
+  g.fillRect(0, S - 1, S, 1);
+  g.fillRect(0, 0, 1, S);
+  g.fillRect(S - 1, 0, 1, S);
+};
+
 interface FacePainters {
   top: Painter;
   side: Painter;
@@ -306,6 +347,8 @@ const PAINTERS: Record<BlockType, FacePainters> = {
   snow: { top: snowTop, side: snowSide, bottom: noise('#e9ecef', 0.05) },
   gift: { top: giftBox, side: giftBox, bottom: giftBox },
   crystal: { top: crystal, side: crystal, bottom: crystal },
+  barrel: { top: barrelTop, side: barrelSide, bottom: barrelTop },
+  gold: { top: goldCoin, side: goldCoin, bottom: goldCoin },
 };
 
 export interface BlockCanvases {

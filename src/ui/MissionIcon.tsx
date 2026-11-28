@@ -74,6 +74,44 @@ export function MissionIcon({ id }: { id: MissionId }) {
         <b className="badge-num">123</b>
       </span>
     );
+  if (id === 'coins')
+    return (
+      <span className="mission-icon">
+        <img src={iconFor('gold')} alt="" />
+        <span className="badge-search">
+          <IconSearch />
+        </span>
+      </span>
+    );
+  if (id === 'mast')
+    return (
+      <span className="mission-icon">
+        <img src={iconFor('wood')} alt="" />
+        <span className="badge-emoji">⛵</span>
+      </span>
+    );
+  if (id === 'flags')
+    return (
+      <span className="mission-icon pattern-icon">
+        <img src={iconFor('red')} alt="" />
+        <img src={iconFor('sand')} alt="" />
+        <span className="badge-emoji">❓</span>
+      </span>
+    );
+  if (id === 'square')
+    return (
+      <span className="mission-icon">
+        <img src={iconFor('stone')} alt="" />
+        <span className="badge-emoji">🔲</span>
+      </span>
+    );
+  if (id === 'pier')
+    return (
+      <span className="mission-icon">
+        <img src={iconFor('wood')} alt="" />
+        <span className="badge-emoji">🌊</span>
+      </span>
+    );
   return (
     <span className="mission-icon">
       <IconBridge />
@@ -92,6 +130,11 @@ const slotBlock = {
   pattern: 'wood',
   crystals: 'crystal',
   numbers: 'snow',
+  coins: 'gold',
+  mast: 'wood',
+  flags: 'red',
+  square: 'stone',
+  pier: 'wood',
 } as const;
 
 /** Políčka průběhu – plní se kostičkami (u krmení zvířátky), žádná čísla ani časomíra. */
@@ -112,7 +155,7 @@ export function ProgressSlots({ id, progress, target, fed }: { id: MissionId; pr
         }
         return (
           <span key={i} className={`slot ${filled ? 'filled' : ''}`}>
-            {filled ? <img src={iconFor(slotBlock[id])} alt="" /> : id === 'wood5' || id === 'tower5' || id === 'numbers' ? <small>{i + 1}</small> : null}
+            {filled ? <img src={iconFor(slotBlock[id])} alt="" /> : id === 'wood5' || id === 'tower5' || id === 'numbers' || id === 'mast' || id === 'square' ? <small>{i + 1}</small> : null}
           </span>
         );
       })}

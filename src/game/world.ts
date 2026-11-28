@@ -181,6 +181,23 @@ export const isInsideCastle = (r: Rect, p: Vec3): boolean =>
   p.x > r.x0 && p.x < r.x1 && p.z > r.z0 && p.z < r.z1 && !isTowerOf(r, p.x, p.z);
 export const isInCastle = (p: Vec3): boolean => isInsideCastle(CASTLE, p);
 
+/** Palma: vysoký tenký kmen (5) a listy do kříže, které na koncích visí dolů. */
+export function addPalm(w: World, x: number, z: number): void {
+  for (let y = 1; y <= 5; y++) w.setRaw({ x, y, z }, 'log');
+  w.setRaw({ x, y: 6, z }, 'leaves');
+  for (const [dx, dz] of [
+    [1, 0],
+    [-1, 0],
+    [0, 1],
+    [0, -1],
+  ]) {
+    const a = { x: x + dx, y: 6, z: z + dz };
+    const b = { x: x + 2 * dx, y: 5, z: z + 2 * dz };
+    if (inBounds(a)) w.setRaw(a, 'leaves');
+    if (inBounds(b) && !w.has(b)) w.setRaw(b, 'leaves');
+  }
+}
+
 export function addTree(w: World, x: number, z: number, snowy = false): void {
   for (let y = 1; y <= 3; y++) w.setRaw({ x, y, z }, 'log');
   for (let dx = -1; dx <= 1; dx++)
@@ -372,7 +389,7 @@ export function refillQuestionBoxes(w: World, spots: Vec3[] = QUESTION_SPOTS, bl
 }
 
 /** Kolik je ve světě beden s otazníkem / dárků. */
-export const countBoxes = (w: World): number => w.count('question') + w.count('gift');
+export const countBoxes = (w: World): number => w.count('question') + w.count('gift') + w.count('barrel');
 
 /** Stojí postavička u bedny (vedle ní nebo na ní)? Vrací pozici bedny. */
 export function adjacentQuestionBox(w: World, p: Vec3): Vec3 | null {

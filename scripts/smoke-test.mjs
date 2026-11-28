@@ -866,9 +866,175 @@ async function testModeFlow() {
   await ctx.close();
 }
 
+async function pirateFlow() {
+  console.log('\nPirátský ostrov (iPad):');
+  const ctx = await browser.newContext({ ...devices['iPad (gen 7) landscape'], reducedMotion: 'reduce' });
+  const page = await ctx.newPage();
+  const errors = [];
+  page.on('pageerror', (e) => errors.push(e.message));
+  await page.goto(`${BASE}/?test`);
+  await page.waitForFunction(() => !!window.__onda);
+  await page.getByRole('button', { name: 'Hrát' }).click();
+  // klíče z ostrova a z Ledového království → přes mapu se dá doplout na Pirátský ostrov
+  await page.evaluate(() => {
+    const c = window.__onda.controller;
+    c.set({ keys: ['island', 'ice'] });
+    c.refreshBoat();
+  });
+  await page.locator('.mode-col').getByRole('button', { name: 'Mapa světů' }).click();
+  await page.screenshot({ path: `${OUT}/60-map-pirate.png` });
+  await page.locator('.worlds-map g[role=button]').nth(2).click();
+  await page.waitForFunction(() => window.__onda.controller.getSnapshot().worldId === 'pirate' && !window.__onda.controller.getSnapshot().overlay, null, { timeout: 120000 }).catch(() => {});
+  ok((await snap(page)).worldId === 'pirate', 'lodičkou jsme dopluli na Pirátský ostrov');
+  const inv = await page.evaluate(() => {
+    const w = window.__onda.world();
+    return { barrels: w.count('barrel'), boxes: w.count('question') + w.count('gift'), sand: w.count('sand'), kinds: window.__onda.view.animals.map((a) => a.kind) };
+  });
+  ok(inv.barrels >= 1 && inv.boxes === 0 && inv.sand > 60, `písečný ostrov a místo beden sudy (${inv.barrels})`);
+  ok(['pirate', 'skeleton', 'ship', 'dog', 'boat'].every((k) => inv.kinds.includes(k)), 'je tu pirát Fousek, kostlivec Kostík, pirátská loď, Frený a lodička');
+  await sleep(800);
+  await page.screenshot({ path: `${OUT}/61-pirate-world.png` });
+
+  await page.getByRole('button', { name: 'Úkoly' }).click();
+  const titles = await page.locator('.menu-item:not(.free)').evaluateAll((els) => els.map((e) => e.getAttribute('aria-label')));
+  ok(titles.length === 5 && titles[0] === 'Najdi 4 zlaté mince', `5 pirátských úkolů: ${titles.join(' | ')}`);
+  await page.screenshot({ path: `${OUT}/62-pirate-missions.png` });
+
+  // ÚKOL: stožár (kámen se vrátí, dřevo se počítá)
+  await page.getByRole('button', { name: 'Postav stožár' }).click();
+  await page.getByRole('button', { name: 'Jdeme na to!' }).click();
+  await page.getByRole('button', { name: 'kámen' }).click();
+  await tapGhost(page, { x: 7, y: 1, z: 15 });
+  await sleep(1500);
+  ok((await blockAt(page, { x: 7, y: 1, z: 15 })) === null && (await snap(page)).highlightMaterial === 'wood', 'stožár: kámen se jemně vrátí a rozbliká se dřevo');
+  await page.getByRole('button', { name: 'dřevo' }).click();
+  for (const y of [1, 2, 3, 4]) await tapGhost(page, { x: 7, y, z: 15 });
+  await page.waitForFunction(() => window.__onda.controller.getSnapshot().overlay?.kind === 'success', null, { timeout: 8000 }).catch(() => {});
+  ok((await snap(page)).completed.includes('mast'), 'stožár ze 4 kostek – úkol splněn');
+  await page.screenshot({ path: `${OUT}/63-mast-done.png` });
+  await page.getByRole('button', { name: 'Stavět dál' }).click();
+
+  // ÚKOL: zlaté mince
+  await page.getByRole('button', { name: 'Úkoly' }).click();
+  await page.getByRole('button', { name: 'Najdi 4 zlaté mince' }).click();
+  await page.getByRole('button', { name: 'Jdeme na to!' }).click();
+  const coins = await page.evaluate(() => window.__onda.controller.mission.targets);
+  for (const t of coins) await tapVisible(page, t);
+  await page.waitForFunction(() => window.__onda.controller.getSnapshot().completed.includes('coins'), null, { timeout: 8000 }).catch(() => {});
+  ok((await snap(page)).completed.includes('coins'), 'zlaté mince nalezené – úkol splněn');
+  await page.waitForFunction(() => window.__onda.controller.getSnapshot().overlay?.kind === 'success', null, { timeout: 5000 }).catch(() => {});
+  await page.getByRole('button', { name: 'Stavět dál' }).click();
+
+  // KOSTLIVEC KOSTÍK: pexeso
+  await page.getByRole('button', { name: 'Chození' }).click();
+  await page.getByRole('button', { name: 'Ondra' }).click();
+  ok(await tapCreature(page, 'skeleton'), 'na kostlivce Kostíka jde ťuknout');
+  await page.waitForFunction(() => window.__onda.controller.getSnapshot().overlay?.kind === 'memory', null, { timeout: 120000 }).catch(() => {});
+  ok((await snap(page)).overlay?.kind === 'memory', 'Ondra došel ke Kostíkovi a otevřelo se pexeso');
+  await page.screenshot({ path: `${OUT}/64-memory.png` });
+  // nejdřív jedna špatná dvojice (otočí se zpátky), pak všechny správně
+  const symbols = await page.locator('.memory-tile').evaluateAll((els) => els.map((e) => e.getAttribute('data-symbol')));
+  const a = symbols[0];
+  const bIdx = symbols.findIndex((x) => x !== a);
+  await page.locator('.memory-tile').nth(0).click();
+  await page.locator('.memory-tile').nth(bIdx).click();
+  await sleep(1500);
+  ok((await page.locator('.memory-tile.open').count()) === 0, 'pexeso: různé kartičky se zase otočí (žádný trest)');
+  for (const sym of [...new Set(symbols)]) {
+    await page.locator(`.memory-tile[data-symbol="${sym}"]`).nth(0).click();
+    await page.locator(`.memory-tile[data-symbol="${sym}"]`).nth(1).click();
+    await sleep(300);
+  }
+  ok((await page.locator('.memory-tile.matched').count()) === 8 && (await page.locator('.sling-done').isVisible()), 'pexeso: všechny dvojice nalezené, velké ✔');
+  await page.screenshot({ path: `${OUT}/65-memory-done.png` });
+  await page.locator('.sling-done').click();
+  ok(!(await snap(page)).overlay, 'pexeso: ✔ vrátí zpět na ostrov');
+
+  // PIRÁT FOUSEK: barevná lodní bitva
+  await page.getByRole('button', { name: 'Laura' }).click();
+  ok(await tapCreature(page, 'pirate'), 'na piráta Fouska jde ťuknout');
+  await page.waitForFunction(() => window.__onda.controller.getSnapshot().overlay?.kind === 'paint', null, { timeout: 120000 }).catch(() => {});
+  ok((await snap(page)).overlay?.kind === 'paint', 'Laura došla k pirátovi a otevřela se barevná lodní bitva');
+  const cv = await page.locator('.paint-canvas').boundingBox();
+  const at = (x, y) => ({ x: cv.x + (x / 900) * cv.width, y: cv.y + (y / 500) * cv.height });
+  // míření na levou, prostřední a pravou plachtu
+  const pulls = [
+    [70, 375],
+    [100, 395],
+    [105, 415],
+    [50, 375],
+    [60, 380],
+    [75, 385],
+  ];
+  for (let i = 0; i < 20; i++) {
+    const s0 = at(150, 320);
+    const s1 = at(...pulls[i % pulls.length]);
+    await page.mouse.move(s0.x, s0.y);
+    await page.mouse.down();
+    await page.mouse.move(s1.x, s1.y, { steps: 5 });
+    if (i === 0) await page.screenshot({ path: `${OUT}/66-paint-aim.png` });
+    await page.mouse.up();
+    await page.waitForFunction(() => !window.__paint.shot.flying, null, { timeout: 10000 }).catch(() => {});
+    await sleep(200);
+    if (await page.evaluate(() => window.__paint.won)) break;
+  }
+  const painted = await page.evaluate(() => window.__paint.sails.filter((s) => s.color).length);
+  ok(painted > 0, `balónky obarvily plachty (${painted} ze 3)`);
+  if (await page.evaluate(() => window.__paint.won)) {
+    await sleep(800);
+    ok(await page.locator('.sling-done').isVisible(), 'všechny plachty barevné – duha a velké ✔');
+    await page.screenshot({ path: `${OUT}/67-paint-done.png` });
+    await page.locator('.sling-done').click();
+  } else {
+    console.log('    (všechny 3 plachty se v testu netrefily – zavírám křížkem)');
+    await page.screenshot({ path: `${OUT}/67-paint-done.png` });
+    await page.getByRole('button', { name: 'Zavřít' }).click();
+  }
+
+  // ostatní úkoly přes testovací režim → klíč z Pirátského ostrova → červené X
+  await page.evaluate(() => window.__onda.controller.testCompleteAll());
+  ok((await snap(page)).keys.includes('pirate') && (await snap(page)).overlay?.kind === 'treasure', 'všechny úkoly splněné – třetí klíč');
+  await page.screenshot({ path: `${OUT}/68-third-key.png` });
+  await page.getByRole('button', { name: 'Zavřít' }).first().click();
+  await sleep(1200);
+  ok(await page.evaluate(() => !!window.__onda.controller.activeX()), 'se všemi třemi klíči se pod palmou objevilo červené X');
+  await page.screenshot({ path: `${OUT}/69-red-x.png` });
+  await page.evaluate(() => window.__onda.view.resetView());
+  await sleep(600);
+
+  // KOPÁNÍ: Ondra dojde k X → hrabání v písku → truhla → poklad
+  await page.evaluate(() => window.__onda.controller.selectCharacter('ondra', true));
+  await tapVisible(page, { x: 13, y: 0, z: 13 });
+  await page.waitForFunction(() => window.__onda.controller.getSnapshot().overlay?.kind === 'dig', null, { timeout: 120000 }).catch(() => {});
+  ok((await snap(page)).overlay?.kind === 'dig', 'Ondra došel k červenému X a kope');
+  const sandBox = await page.locator('.dig-sand').boundingBox();
+  for (let r = 0; r < 9 && (await page.locator('.dig-area').getAttribute('data-stage')) === 'dig'; r++) {
+    const y = sandBox.y + ((r + 0.5) / 9) * sandBox.height;
+    await page.mouse.move(sandBox.x + 10, y);
+    await page.mouse.down();
+    await page.mouse.move(sandBox.x + sandBox.width - 10, y, { steps: 10 });
+    await page.mouse.up();
+    if (r === 2) await page.screenshot({ path: `${OUT}/70-digging.png` });
+  }
+  ok((await page.locator('.dig-area').getAttribute('data-stage')) === 'chest', 'pod pískem se objevila truhla');
+  await page.locator('.dig-chest').click();
+  await sleep(1200);
+  ok((await page.locator('.dig-area').getAttribute('data-stage')) === 'open', 'truhla otevřená třemi klíči – poklad!');
+  await page.screenshot({ path: `${OUT}/71-treasure.png` });
+  await page.locator('.sling-done').click();
+  const fin = await snap(page);
+  ok(!fin.overlay && fin.keys.includes('treasure') && !(await page.evaluate(() => !!window.__onda.controller.activeX())), 'po oslavě X zmizí a poklad je uložený');
+  const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('ondacraft:save')));
+  ok(saved.worlds.pirate?.completed.length === 5 && saved.keys.includes('treasure'), 'Pirátský ostrov i poklad jsou uložené');
+  ok(errors.length === 0, `bez chyb v konzoli${errors.length ? ': ' + errors.join(' | ') : ''}`);
+  await ctx.close();
+}
+
 try {
   if (process.env.ONLY === 'test') {
     await testModeFlow();
+  } else if (process.env.ONLY === 'pirate') {
+    await pirateFlow();
   } else {
   // ONLY=ice npm run test:e2e → jen Ledové království (rychlé ladění)
   if (process.env.ONLY !== 'ice') {
@@ -877,6 +1043,7 @@ try {
     await iphoneMapAnimated();
   }
   await iceFlow();
+  await pirateFlow();
   await testModeFlow();
   }
 } catch (e) {

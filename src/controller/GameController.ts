@@ -8,7 +8,10 @@ import {
   isFeedable,
   numberAt,
   isMissionTarget,
+  isPlanMission,
   missionsFor,
+  planSlots,
+  planStatus,
   reduceMission,
   restoreMission,
   startMission,
@@ -40,8 +43,7 @@ import type { Animal, AnimalKind } from '../render/animals';
 import { areNeighbors, CHARACTER_IDS, pickDialogIndex, resolveCharacterPos, type CharacterId, type CharacterState } from '../game/characters';
 import { dropToStand, findPath, reachableCells, walkGoalFromTap, type PathResult } from '../game/pathfinding';
 import { generateFreshQuiz, isCorrect, quizKey, type Quiz } from '../game/quiz';
-import { patternToFill, rowStatus, snowmanSlots, stackStatus, towerSlots } from '../game/iceMissions';
-import { awardKey, missionsLeft } from '../game/rewards';
+import { awardKey, missionsLeft, treasureReady, TREASURE_FOUND } from '../game/rewards';
 import { closeEnough, followSpots } from '../game/follow';
 import { isUnlocked, WORLD_IDS, WORLDS, type WorldId } from '../game/worlds';
 import { isBoxBlock } from '../game/blocks';
@@ -54,6 +56,12 @@ export type Mode = 'build' | 'erase';
 /** Hlavní režim (ikony vpravo): chození s postavičkou, stavění z kostek, stavitel podle šablony. */
 export type PlayMode = 'walk' | 'build' | 'architect';
 
+/** Postavy s minihrou a jejich hra (vyskakovací okno). */
+export const NPC_GAME = { princess: 'puzzle', snowman: 'sling', pirate: 'paint', skeleton: 'memory' } as const;
+export type GameNpc = keyof typeof NPC_GAME;
+const GAME_NPCS = Object.keys(NPC_GAME) as GameNpc[];
+export const isGameNpc = (k: string): k is GameNpc => k in NPC_GAME;
+
 export type Overlay =
   | null
   | { kind: 'intro'; mission: MissionId }
@@ -65,6 +73,9 @@ export type Overlay =
   | { kind: 'travel'; to: WorldId }
   | { kind: 'puzzle' }
   | { kind: 'sling' }
+  | { kind: 'paint' }
+  | { kind: 'memory' }
+  | { kind: 'dig' }
   | { kind: 'templateDone'; template: TemplateId }
   | { kind: 'missions' }
   | { kind: 'parents' }
@@ -250,7 +261,10 @@ export class GameController {
       npc.faceTowards({ x: n.pos.x - 1, y: 1, z: n.pos.z }); // čelem ke středu ostrova
       this.npcs.set(n.kind, npc);
     }
-    this.npcs.get('princess')?.setBubble('alert');
+    // postavy s hrou mají nad hlavou „!!“
+    for (const k of GAME_NPCS) if (k !== 'snowman') this.npcs.get(k)?.setBubble('alert');
+    // pirátská loď na moři mimo ostrov (jen ozdoba)
+    if (def.ship) view.addAnimal('ship', def.ship).faceTowards({ x: def.ship.x, y: 1, z: def.ship.z + 1 });
     this.characters.clear();
     for (const id of CHARACTER_IDS) {
       const saved = this.savedCharacters.find((c) => c.id === id)?.pos;
@@ -266,6 +280,7 @@ export class GameController {
     }
     this.boat = null;
     this.refreshBoat();
+    this.refreshTreasureX();
     this.refreshMissionVisuals();
     // Ve světě mají být vždy bedny/dárky – chybějící se doplní hned a potichu.
     while (countBoxes(this.world) < QUESTION_BOX_TARGET && this.spawnQuestionBox(false));
@@ -282,6 +297,8 @@ export class GameController {
       for (let dx = -1; dx <= 1; dx++) for (let dz = -1; dz <= 1; dz++) out.push({ x: p.x + dx, y: p.y, z: p.z + dz });
     };
     for (const n of this.npcs.values()) around(n.standCell);
+    const x = this.activeX();
+    if (x) around(x); // na červené X si Frený nesedne
     if (this.boat) {
       around(this.boat.standCell);
       out.push(WORLDS[this.worldId].boat.stand);
@@ -310,6 +327,41 @@ export class GameController {
       }
     }
   };
+
+  /** Červené X na Pirátském ostrově – až má dítě klíče ze všech světů. */
+  private activeX(): Vec3 | null {
+    const x = WORLDS[this.worldId].treasureX;
+    return x && treasureReady(this.snapshot.keys) ? x : null;
+  }
+
+  private refreshTreasureX(): void {
+    this.view?.effects.setTreasureX(this.activeX());
+  }
+
+  /** Dítě došlo k červenému X – kopání. */
+  private openDig(child: Animal): void {
+    const x = this.activeX();
+    if (!x) return;
+    child.faceTowards(x);
+    this.sfx.play('collect');
+    this.set({ overlay: { kind: 'dig' } });
+    this.say(CS.dig.start);
+  }
+
+  /** Poklad vykopaný a otevřený – konečná oslava. X zmizí, děti a Frený mají srdíčka. */
+  digDone(): void {
+    if (!this.snapshot.keys.includes(TREASURE_FOUND)) this.set({ keys: [...this.snapshot.keys, TREASURE_FOUND] });
+    this.set({ overlay: null });
+    this.refreshTreasureX();
+    for (const c of this.characters.values()) {
+      c.setBubble('heart', 5);
+      c.poke();
+    }
+    this.animals.get('dog')?.setBubble('heart', 5);
+    this.sfx.play('success');
+    this.say(CS.treasure.found);
+    this.saveNow();
+  }
 
   /** Kam se dá odsud plout (otevřené světy kromě tohoto). */
   private destinations(): WorldId[] {
@@ -497,7 +549,9 @@ export class GameController {
     this.sfx.play(fresh ? 'success' : 'collect');
     this.set({ overlay: { kind: 'treasure', fresh } });
     const t = CS.treasure;
-    if (fresh) this.say(t.fresh);
+    if (fresh) this.say(treasureReady(this.snapshot.keys) ? `${t.fresh} ${t.allKeys}` : t.fresh);
+    else if (this.snapshot.keys.includes(TREASURE_FOUND)) this.say(t.found);
+    else if (treasureReady(this.snapshot.keys)) this.say(t.allKeys);
     else if (this.snapshot.keys.includes(this.worldId)) this.say(t.done);
     else this.say(t.notDone(t.left[missionsLeft(this.snapshot.completed, this.worldId)] ?? ''));
   }
@@ -549,6 +603,16 @@ export class GameController {
     this.sfx.play('click');
     this.set({ overlay: null });
     this.markActivity();
+    if (o?.kind === 'treasure' && o.fresh && this.activeX()) {
+      // poslední klíč: pod palmou se objeví červené X
+      this.refreshBoat();
+      this.refreshTreasureX();
+      const x = this.activeX()!;
+      this.view?.focusOn(x, 45, 1.3);
+      window.setTimeout(() => this.say(CS.dig.xAppeared), 300);
+      window.setTimeout(() => this.view?.resetView(), 5000);
+      return;
+    }
     if (o?.kind === 'treasure' && o.fresh) {
       // klíč získán: na vodě se objeví lodička do dalšího světa
       const had = !!this.boat;
@@ -646,14 +710,12 @@ export class GameController {
       this.refreshMissionVisuals();
     }
     if (m.id === 'doghouse') this.refreshMissionVisuals(true);
-    if (m.id === 'snowman') this.set({ highlightMaterial: 'snow' });
-    if (m.id === 'snowman' || m.id === 'tower5') this.refreshMissionVisuals(true);
-    if (m.id === 'pattern') {
-      const next = rowStatus(this.world, patternToFill()).next[0];
+    if (isPlanMission(m.id)) {
+      const next = planStatus(m.id, this.world)?.next[0];
       if (next?.block) this.set({ highlightMaterial: next.block });
       this.refreshMissionVisuals(true);
     }
-    if (m.id === 'crystals') this.view?.effects.setBeacons(m.targets);
+    if (m.id === 'crystals' || m.id === 'coins') this.view?.effects.setBeacons(m.targets);
     if (m.id === 'numbers') {
       const next = m.targets[m.progress];
       if (next) this.view?.effects.setBeacons([next]);
@@ -737,11 +799,15 @@ export class GameController {
   }
 
   /** Test: rovnou otevřít minihru / kvíz / plavbu. */
-  testOpen(what: 'puzzle' | 'sling' | 'quiz' | 'travel'): void {
+  testOpen(what: 'puzzle' | 'sling' | 'paint' | 'memory' | 'dig' | 'quiz' | 'travel'): void {
     this.set({ overlay: null });
-    if (what === 'puzzle' || what === 'sling') {
+    if (what === 'dig') {
+      this.set({ overlay: { kind: 'dig' } });
+      this.say(CS.dig.start);
+    } else if (what === 'puzzle' || what === 'sling' || what === 'paint' || what === 'memory') {
+      const npc = (Object.keys(NPC_GAME) as GameNpc[]).find((k) => NPC_GAME[k] === what)!;
       this.set({ overlay: { kind: what } });
-      this.say(CS.npcs[what === 'puzzle' ? 'princess' : 'snowman'].hello);
+      this.say(CS.npcs[npc].hello);
     } else if (what === 'quiz') {
       const findBox = (): Vec3 | undefined => {
         for (const [k, t] of this.world.entries())
@@ -943,7 +1009,11 @@ export class GameController {
         this.selectCharacter(this.snapshot.selectedCharacter === id && pm === 'walk' ? null : id);
       } else if (a.kind === 'boat') {
         this.tapBoat();
-      } else if (a.kind === 'princess' || a.kind === 'snowman') {
+      } else if (a.kind === 'ship') {
+        a.poke();
+        this.sfx.play('soft');
+        this.say(CS.npcs.pirate.ship);
+      } else if (isGameNpc(a.kind)) {
         // k postavě musí dojít Ondra nebo Laura – pak se otevře hra
         const npcKind = a.kind;
         if (sel) {
@@ -998,6 +1068,18 @@ export class GameController {
       return;
     }
 
+    // Červené X: kopat může jen postavička, která tam dojde (a nic se na X nestaví).
+    const X = this.activeX();
+    if (X && pos.x === X.x && pos.z === X.z && pos.y <= X.y) {
+      if (sel) this.walkCharacter(sel, { ...X, y: X.y - 1 }, { x: 0, y: 1, z: 0 });
+      else {
+        this.sfx.play('soft');
+        this.say(CS.dig.xNeedsFriend);
+        this.nudgeCharacters();
+      }
+      return;
+    }
+
     // Bedna s otazníkem: otevře ji jen postavička, která k ní dojde.
     if (isBoxBlock(block)) {
       if (sel) {
@@ -1005,7 +1087,7 @@ export class GameController {
       } else {
         this.view.effects.burst({ ...pos, y: pos.y + 0.5 }, '#ffd43b', 6);
         this.sfx.play('soft');
-        this.say(block === 'gift' ? CS.voice.giftNeedsFriend : CS.voice.boxNeedsFriend);
+        this.say(block === 'gift' ? CS.voice.giftNeedsFriend : block === 'barrel' ? CS.voice.barrelNeedsFriend : CS.voice.boxNeedsFriend);
         this.nudgeCharacters();
       }
       return;
@@ -1125,7 +1207,10 @@ export class GameController {
       const here = a.standCell;
       const nearBox = adjacentQuestionBox(this.world, here);
       const nearNpc = [...this.npcs.entries()].find(([, n]) => areNeighbors(here, n.standCell));
-      if (nearBox && !this.snapshot.overlay) {
+      const x = this.activeX();
+      if (x && areNeighbors(here, x) && !this.snapshot.overlay) {
+        this.openDig(a);
+      } else if (nearBox && !this.snapshot.overlay) {
         this.openQuiz(nearBox);
       } else if (nearNpc && !this.snapshot.overlay) {
         this.openNpcGame(nearNpc[0], a);
@@ -1216,24 +1301,24 @@ export class GameController {
   /** Dítě došlo k princezně / sněhulákovi: pozdrav a hra ve vyskakovacím okně. */
   private openNpcGame(kind: NpcKind, child: Animal): void {
     const npc = this.npcs.get(kind);
-    if (!npc || (kind !== 'princess' && kind !== 'snowman')) return;
+    if (!npc || !isGameNpc(kind)) return;
     child.faceTowards(npc.standCell);
     npc.faceTowards(child.standCell);
     npc.poke();
     this.sfx.play('collect');
     this.say(CS.npcs[kind].hello);
-    window.setTimeout(() => this.set({ overlay: { kind: kind === 'princess' ? 'puzzle' : 'sling' } }), 900);
+    window.setTimeout(() => this.set({ overlay: { kind: NPC_GAME[kind] } }), 900);
   }
 
   /** Minihra dohraná (puzzle složené / hrad zbouraný). */
-  npcGameDone(kind: 'princess' | 'snowman'): void {
+  npcGameDone(kind: GameNpc): void {
     this.sfx.play('success');
     this.say(CS.npcs[kind].done);
     const npc = this.npcs.get(kind);
     npc?.setBubble('heart', 6);
     npc?.poke();
     for (const c of this.characters.values()) if (npc && areNeighbors(c.standCell, npc.standCell)) c.setBubble('heart', 4);
-    if (kind === 'princess') window.setTimeout(() => npc?.setBubble('alert'), 60_000);
+    if (kind !== 'snowman') window.setTimeout(() => npc?.setBubble('alert'), 60_000);
   }
 
   /** Krátké hlášky z miniher (pochvala po dílku puzzle, „bum“ u praku…). */
@@ -1265,7 +1350,8 @@ export class GameController {
       this.view?.effects.burst(spot, '#ffd43b', 14);
       this.view?.effects.pop(spot);
       this.sfx.play('collect');
-      if (!this.snapshot.overlay) this.say(WORLDS[this.worldId].boxBlock === 'gift' ? CS.voice.newGift : CS.voice.newBox);
+      const bb = WORLDS[this.worldId].boxBlock;
+      if (!this.snapshot.overlay) this.say(bb === 'gift' ? CS.voice.newGift : bb === 'barrel' ? CS.voice.newBarrel : CS.voice.newBox);
     }
     this.scheduleSave();
     return true;
@@ -1354,7 +1440,7 @@ export class GameController {
     this.mission = state;
     this.set({ mission: this.missionView() });
     // svítící místa domečku vždy odpovídají tomu, co ještě chybí
-    if ((state.id === 'doghouse' || state.id === 'snowman' || state.id === 'tower5' || state.id === 'pattern') && !state.done) this.refreshMissionVisuals();
+    if ((state.id === 'doghouse' || isPlanMission(state.id)) && !state.done) this.refreshMissionVisuals();
     this.onFeedback(feedback, ev);
   }
 
@@ -1373,11 +1459,11 @@ export class GameController {
         this.set({ highlightMaterial: ANIMAL_FOOD[ev.animal] });
       }
       if (m.id === 'doghouse' && m.otherTries % 2 === 1) this.say(texts.doghouse.keepFree);
-      if ((m.id === 'snowman' || m.id === 'pattern') && ev.kind === 'placed') {
+      if (isPlanMission(m.id) && ev.kind === 'placed') {
         // špatný materiál na svítícím místě: rada a kostka se jemně vrátí (svítící místo zůstane)
-        const expected = m.id === 'snowman' ? 'snow' : patternToFill().find((x) => x.pos.x === ev.pos.x && x.pos.z === ev.pos.z)?.block;
+        const expected = planSlots(m.id).find((x) => x.pos.x === ev.pos.x && x.pos.y === ev.pos.y && x.pos.z === ev.pos.z)?.block ?? null;
         this.sfx.play('soft');
-        this.say(m.id === 'snowman' ? texts.snowman.wrong : expected === 'wood' ? texts.pattern.wrongWood : texts.pattern.wrongIce);
+        this.say(this.wrongMaterialText(m.id, expected));
         if (expected) this.set({ highlightMaterial: expected });
         window.setTimeout(() => {
           if (this.world.get(ev.pos) === ev.block) {
@@ -1411,25 +1497,26 @@ export class GameController {
         this.flashGhosts(5000);
       }
       if (m.id === 'doghouse') this.say(pickOne(CS.voice.praise));
-      if (m.id === 'snowman') this.say(texts.snowman.count[m.progress - 1] ?? '');
-      if (m.id === 'tower5') this.say(texts.tower5.count[m.progress - 1] ?? '');
-      if (m.id === 'pattern') {
+      const count = this.countText(m.id, m.progress);
+      if (isPlanMission(m.id) && count) this.say(count);
+      if (m.id === 'pattern' || m.id === 'flags') {
         this.say(pickOne(CS.voice.praise));
         this.set({ highlightMaterial: null });
       }
       if (m.id === 'crystals') this.say(texts.crystals.found[m.progress - 1] || pickOne(CS.voice.praise));
+      if (m.id === 'coins') this.say(texts.coins.found[m.progress - 1] || pickOne(CS.voice.praise));
       if (m.id === 'numbers') {
         this.sfx.play('collect');
         this.say(texts.numbers.says[m.progress - 1] ?? '');
         this.refreshMissionVisuals();
       }
-      if (m.id === 'snowman' || m.id === 'tower5' || m.id === 'pattern') this.refreshMissionVisuals();
+      if (isPlanMission(m.id)) this.refreshMissionVisuals();
       return;
     }
     // complete
     const id = m.id;
     if (id === 'wood5' && ev.kind === 'placed') this.say(texts.wood5.count[4]);
-    if (id === 'tower5') this.say(texts.tower5.count[4]);
+    if (id === 'tower5' || id === 'mast' || id === 'square' || id === 'pier') this.say(this.countText(id, m.target));
     if (id === 'numbers') this.view?.effects.setNumberLabels([]);
     this.endMissionVisuals();
     const completed = this.snapshot.completed.includes(id) ? this.snapshot.completed : [...this.snapshot.completed, id];
@@ -1488,17 +1575,16 @@ export class GameController {
         if (!(m.fed ?? []).includes(k)) this.animals.get(k)?.setBubble({ food: ANIMAL_FOOD[k] });
       }
     }
-    if (m && (m.id === 'snowman' || m.id === 'tower5' || m.id === 'pattern')) {
-      const st = m.id === 'pattern' ? rowStatus(this.world, patternToFill()) : stackStatus(this.world, m.id === 'snowman' ? snowmanSlots() : towerSlots());
-      const ghosts = m.id === 'pattern' ? st.next : st.next;
-      // sněhulák: bílá svítící místa; věž: žlutá; řada: žlutá (správnou barvu má dítě vymyslet)
+    if (m && isPlanMission(m.id)) {
+      const ghosts = planStatus(m.id, this.world)!.next;
+      // sněhulák: bílá svítící místa; ostatní žlutá (správnou barvu u vzoru má dítě vymyslet)
       this.view?.effects.setGhosts(
         ghosts.map((g) => g.pos),
         ghosts.map(() => (m.id === 'snowman' ? '#ffffff' : '#ffd43b')),
       );
       if (focus) {
-        const p = m.id === 'pattern' ? patternToFill()[1].pos : (m.id === 'snowman' ? snowmanSlots() : towerSlots())[0].pos;
-        this.view?.focusOn(p, 45, 1.3);
+        const slots = planSlots(m.id);
+        this.view?.focusOn(slots[Math.min(1, slots.length - 1)].pos, 45, 1.3);
       }
     }
     if (m?.id === 'numbers') {
@@ -1512,6 +1598,23 @@ export class GameController {
       window.clearTimeout(this.ghostTimer);
       this.view?.effects.setGhosts(doghouseParts().filter((p) => !this.world.has(p)));
     }
+  }
+
+  /** Hlas při stavění podle plánu („Jedna! Dvě!…“). */
+  private countText(id: MissionId, n: number): string {
+    const t = CS.missions[id] as { count?: string[] };
+    return t.count?.[n - 1] ?? '';
+  }
+
+  /** Jemná rada, když na svítící místo patří jiný materiál. */
+  private wrongMaterialText(id: MissionId, expected: BlockType | null): string {
+    const t = CS.missions;
+    if (id === 'snowman') return t.snowman.wrong;
+    if (id === 'pattern') return expected === 'wood' ? t.pattern.wrongWood : t.pattern.wrongIce;
+    if (id === 'mast') return t.mast.wrong;
+    if (id === 'pier') return t.pier.wrong;
+    if (id === 'flags') return expected === 'red' ? t.flags.wrongRed : t.flags.wrongSand;
+    return CS.missions[id].hint;
   }
 
   private endMissionVisuals(): void {

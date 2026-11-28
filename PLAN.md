@@ -135,6 +135,18 @@ se plní), **nápovědu** (po nečinnosti nebo při jiném materiálu – nikdy 
 | Krystaly | 3 schované krystaly, ťuknutím najdeš |
 | Čísla | sněhové koule 1–5, ťukat popořadě (špatná = „zkus číslo …“) |
 
+| Pirátský ostrov | Vyhodnocení |
+|---|---|
+| Zlaté mince | 4 schované mince (`gold`), ťuknutím najdeš |
+| Stožár | 4 dřevěné kostky odspodu (`mastSlots`) |
+| Vlajky | červená, písek, červená, ? ? ? (`flagsToFill`) |
+| Čtverec | 8 míst kolem středu, jakýkoli materiál (`squareSlots`) |
+| Molo | 3 dřevěná prkna nad lagunou (`pierSlots`) |
+
+Mise se svítícími místy mají společnou tabulku `PLAN_MISSIONS` (`planStatus`, `planSlots`) a hledací mise `SEARCH`
+v `missions.ts`. Velký poklad: `treasureReady(keys)` (klíče ze všech světů) → `effects.setTreasureX`; po vykopání
+se do `keys` uloží značka `treasure` (formát uložení se nemění, počet klíčů v UI přes `worldKeys`).
+
 ## 6. Pedagogické zásady
 
 1. Nejdřív ukázat, pak hrát (úvodní animace + hlas).
@@ -155,6 +167,8 @@ se plní), **nápovědu** (po nečinnosti nebo při jiném materiálu – nikdy 
 - **v0.6** – mapa světů, setkání postav, pohlazení Freného. ✅
 - **v0.7** – **Ledové království** (loďka mezi světy, dárky místo beden, 5 misí: sněhulák, věž z 5,
   vzor led–dřevo, krystaly, čísla 1–5; princezna Vločka s puzzle, sněhulák Bobek s prakem). ✅
-- **v0.7.x** – mise tvary (obtáhni čtverec/obdélník/trojúhelník na zemi), třetí svět (Ostrov s majákem).
+- **v0.8** – **Pirátský ostrov** (sudy, pirátská loď mimo ostrov, 5 misí: mince, stožár, vlajky, čtverec, molo;
+  kostlivec Kostík s pexesem, pirát Fousek s barevnou lodní bitvou; červené X a kopání velkého pokladu
+  se všemi třemi klíči). ✅
 - **v0.8** – mise 8 (písmena z kostek, začáteční hlásky), více světů / slotů pro sourozence.
 - Průběžně: přístupnost (větší kontrast), výkon na starších iPadech, nahrané lidské hlasy jako fallback.

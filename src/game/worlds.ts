@@ -3,6 +3,7 @@ import { PALETTES } from './blocks';
 import type { CharacterId } from './characters';
 import {
   addCastle,
+  addPalm,
   addTree,
   CASTLE,
   generateDefaultWorld,
@@ -19,12 +20,12 @@ import {
  * Světy hry. Každý svět má vlastní mapu, úkoly, postavy a uložení.
  * Herní princip je všude stejný (chození, stavění, Stavitel, bedny/dárky, mise, klíč).
  */
-export type WorldId = 'island' | 'ice';
-export const WORLD_IDS: WorldId[] = ['island', 'ice'];
-export const isWorldId = (v: unknown): v is WorldId => v === 'island' || v === 'ice';
+export type WorldId = 'island' | 'ice' | 'pirate';
+export const WORLD_IDS: WorldId[] = ['island', 'ice', 'pirate'];
+export const isWorldId = (v: unknown): v is WorldId => v === 'island' || v === 'ice' || v === 'pirate';
 
 export type AnimalSpec = { kind: 'dog' | 'sheep' | 'chick'; pos: Vec3 };
-export type NpcKind = 'princess' | 'snowman';
+export type NpcKind = 'princess' | 'snowman' | 'pirate' | 'skeleton';
 export type NpcSpec = { kind: NpcKind; pos: Vec3 };
 
 export interface WorldDef {
@@ -41,7 +42,11 @@ export interface WorldDef {
   boat: { water: Vec3; stand: Vec3 };
   castle: Readonly<Rect>;
   /** Vzhled (barva oblohy, sněžení). */
-  theme: 'summer' | 'winter';
+  theme: 'summer' | 'winter' | 'tropic';
+  /** Ozdoba mimo plochu světa (pirátská loď). */
+  ship?: Vec3;
+  /** Kde se po všech úkolech a klíčích objeví červené X s pokladem. */
+  treasureX?: Vec3;
 }
 
 // ---------------------------------------------------------------------------
@@ -135,6 +140,90 @@ export function generateIceWorld(): World {
   return w;
 }
 
+// ---------------------------------------------------------------------------
+// Pirátský ostrov
+// ---------------------------------------------------------------------------
+//
+//  z=0  . . . . . . ≈≈≈≈ . . . . . .    zátoka s naší loďkou (nahoře)
+//       . . . . . . . ≈≈ . . . . S .    S kostlivec Kostík u skal
+//  z=5  . . . . R s R s R s . . . . .   řada se vzorem (červená, písek…)
+//       . . . . . . . . □□□ . . . . .   čtverec z kamenů (8 svítících míst)
+//  z=11 ≈≈≈ . . . . . . . . . . . . .   laguna, molo k pirátské lodi (mimo ostrov vlevo)
+//       ≈≈≈ P . . . . . . . . P . .     P pirát Fousek u laguny, palma s X vpravo dole
+//  z=15 . . . . . . . M . . . . . . .   M stožár
+
+export const PIRATE_GRASS: Readonly<Rect> = { x0: 3, z0: 3, x1: 12, z1: 12 };
+const PIRATE_WATER: Array<[number, number]> = [
+  [6, 0],
+  [7, 0],
+  [8, 0],
+  [9, 0],
+  [7, 1],
+  [8, 1],
+  ...[9, 10, 11, 12, 13, 14].flatMap((z) => [0, 1, 2].map((x) => [x, z] as [number, number])),
+];
+export const PIRATE_PALMS: Array<[number, number]> = [
+  [2, 4],
+  [5, 9],
+  [12, 12],
+  [10, 2],
+];
+export const BARREL_SPOTS: Vec3[] = [
+  { x: 6, y: 1, z: 8 },
+  { x: 12, y: 1, z: 9 },
+  { x: 14, y: 1, z: 10 },
+  { x: 4, y: 1, z: 10 },
+];
+
+/** Plány pro mise na Pirátském ostrově. */
+export const PIRATE_PLANS = {
+  /** Stožár: 4 dřevěné kostky na sobě. */
+  mast: { x: 7, z: 15 },
+  /** Vlajky: červená, písek, červená, ? ? ? */
+  flags: { x0: 4, z: 5, order: ['red', 'sand', 'red', 'sand', 'red', 'sand'] as BlockType[], given: 3 },
+  /** Čtverec z kamenů kolem středu. */
+  square: { cx: 9, cz: 9 },
+  /** Molo přes lagunu směrem k pirátské lodi (od břehu ven). */
+  pier: [
+    { x: 2, y: 1, z: 11 },
+    { x: 1, y: 1, z: 11 },
+    { x: 0, y: 1, z: 11 },
+  ] as Vec3[],
+  coinSpots: [
+    [1, 1],
+    [15, 0],
+    [14, 14],
+    [3, 7],
+    [11, 6],
+    [15, 12],
+    [9, 14],
+    [1, 6],
+  ] as Array<[number, number]>,
+};
+
+export function generatePirateWorld(): World {
+  const w = new World();
+  for (let x = 0; x < WORLD_W; x++)
+    for (let z = 0; z < WORLD_D; z++) {
+      const water = PIRATE_WATER.some(([wx, wz]) => wx === x && wz === z);
+      const grass = x >= PIRATE_GRASS.x0 && x <= PIRATE_GRASS.x1 && z >= PIRATE_GRASS.z0 && z <= PIRATE_GRASS.z1;
+      w.setRaw({ x, y: 0, z }, water ? 'water' : grass ? 'grass' : 'sand');
+    }
+  for (const [x, z] of PIRATE_PALMS) addPalm(w, x, z);
+  // skály u kostlivce
+  for (const p of [
+    { x: 14, y: 1, z: 2 },
+    { x: 15, y: 1, z: 2 },
+    { x: 15, y: 2, z: 2 },
+    { x: 15, y: 1, z: 3 },
+    { x: 11, y: 1, z: 4 },
+  ])
+    w.setRaw(p, 'stone');
+  refillQuestionBoxes(w, BARREL_SPOTS, 'barrel');
+  w.version = 0;
+  return w;
+}
+
 export const WORLDS: Record<WorldId, WorldDef> = {
   island: {
     id: 'island',
@@ -170,10 +259,29 @@ export const WORLDS: Record<WorldId, WorldDef> = {
     castle: ICE_CASTLE,
     theme: 'winter',
   },
+  pirate: {
+    id: 'pirate',
+    generate: generatePirateWorld,
+    boxBlock: 'barrel',
+    boxSpots: BARREL_SPOTS,
+    palette: PALETTES.pirate,
+    spawn: { ondra: { x: 6, y: 1, z: 3 }, lauriska: { x: 8, y: 1, z: 3 } },
+    animals: [{ kind: 'dog', pos: { x: 7, y: 1, z: 4 } }],
+    npcs: [
+      { kind: 'pirate', pos: { x: 3, y: 1, z: 13 } },
+      { kind: 'skeleton', pos: { x: 13, y: 1, z: 4 } },
+    ],
+    boat: { water: { x: 7, y: 1, z: 1 }, stand: { x: 7, y: 1, z: 2 } },
+    // žádný hrad – prázdný obdélník mimo svět
+    castle: { x0: -10, z0: -10, x1: -10, z1: -10 },
+    theme: 'tropic',
+    ship: { x: -4, y: 1, z: 11 },
+    treasureX: { x: 13, y: 1, z: 13 },
+  },
 };
 
 /** Který svět otevírá klíč ze kterého (ostrov → Ledové království → …). */
-export const UNLOCKED_BY: Record<WorldId, string | null> = { island: null, ice: 'island' };
+export const UNLOCKED_BY: Record<WorldId, string | null> = { island: null, ice: 'island', pirate: 'ice' };
 export const isUnlocked = (id: WorldId, keys: string[]): boolean => {
   const k = UNLOCKED_BY[id];
   return k === null || keys.includes(k);

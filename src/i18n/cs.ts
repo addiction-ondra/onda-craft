@@ -22,6 +22,8 @@ export const CS = {
     snow: 'sníh',
     gift: 'dárek',
     crystal: 'krystal',
+    barrel: 'sud',
+    gold: 'zlatá mince',
   } satisfies Record<BlockType, string>,
 
   /** Hlas při výběru materiálu. */
@@ -42,6 +44,8 @@ export const CS = {
     snow: 'Bílý sníh',
     gift: 'Dárek',
     crystal: 'Ledový krystal',
+    barrel: 'Sud',
+    gold: 'Zlatá mince',
   } satisfies Record<BlockType, string>,
 
   voice: {
@@ -64,6 +68,8 @@ export const CS = {
     petDog: 'Frený, hudlánka!',
     giftNeedsFriend: 'V dárku je úkol! Ťukni na Ondru nebo Lauru a pošli je k dárku.',
     newGift: 'Objevil se nový dárek! Najdeš ho?',
+    barrelNeedsFriend: 'V sudu je úkol! Ťukni na Ondru nebo Lauru a pošli je k sudu.',
+    newBarrel: 'Objevil se nový sud! Najdeš ho?',
     chooseFriend: 'Ahoj! Vyber si dole Ondru nebo Lauru a pojď se projít po světě.',
     walkMode: 'Chození. Vyber si kamaráda a ťukni, kam má jít.',
     pickFirst: 'Nejdřív si vyber, kdo půjde. Ťukni dole na Ondru nebo Lauru.',
@@ -167,6 +173,44 @@ export const CS = {
       says: ['Jedna!', 'Dvě!', 'Tři!', 'Čtyři!', 'Pět!'],
       success: 'Hurá! Jedna, dva, tři, čtyři, pět. Umíš čísla!',
     },
+    coins: {
+      title: 'Najdi 4 zlaté mince',
+      intro: 'Piráti tu poschovávali zlaté mince! Najdi všechny čtyři a ťukni na ně. Svět můžeš otáčet.',
+      hint: 'Podívej se, kde se něco zlatě třpytí. Zkus otočit svět šipkami.',
+      found: ['Jedna mince!', 'Dvě mince!', 'Tři mince! Ještě jedna.', ''],
+      success: 'Hurá! Máš všechny čtyři zlaté mince. Jsi pravý pirát!',
+    },
+    mast: {
+      title: 'Postav stožár',
+      intro: 'Postavíme lodní stožár ze čtyř dřevěných kostek. Vyber hnědé dřevo a ťukej na svítící místo. Budeme počítat!',
+      hint: 'Vyber hnědé dřevo a ťukni na svítící místo. Stožár roste nahoru!',
+      count: ['Jedna!', 'Dvě!', 'Tři!', 'Čtyři!'],
+      wrong: 'Stožár je ze dřeva. Vyber dole hnědé dřevo.',
+      success: 'Hurá! Stožár je hotový. Čtyři kostky! Teď už jen plachta!',
+    },
+    flags: {
+      title: 'Pirátské vlajky',
+      intro: 'Piráti mají vlajky: červená, žlutá, červená, žlutá… Dokonči řadu! Vyber správnou kostku a ťukni na svítící místo.',
+      hint: 'Červená, žlutá, červená… Co přijde teď?',
+      wrongRed: 'Skoro! Po žluté přijde červená. Zkus červenou kostku.',
+      wrongSand: 'Skoro! Po červené přijde žlutá. Zkus žlutý písek.',
+      success: 'Hurá! Červená, žlutá, červená, žlutá, červená, žlutá. Vlajky vlají!',
+    },
+    square: {
+      title: 'Postav čtverec',
+      intro: 'Postavíme ohradu ve tvaru čtverce! Ťukej na svítící místa. Čtverec má čtyři stejné strany a čtyři rohy.',
+      hint: 'Ťukni na svítící místo. Obejdeme čtverec dokola!',
+      count: ['Jedna!', 'Dvě!', 'Tři!', 'Čtyři!', 'Pět!', 'Šest!', 'Sedm!', 'Osm!'],
+      success: 'Hurá! Čtverec je hotový. Čtyři strany a čtyři rohy!',
+    },
+    pier: {
+      title: 'Molo k pirátské lodi',
+      intro: 'Postavíme dřevěné molo přes lagunu až k pirátské lodi! Vyber hnědé dřevo a ťukej na svítící místa.',
+      hint: 'Vyber hnědé dřevo a ťukni na svítící místo nad vodou.',
+      count: ['Jedno prkno!', 'Dvě prkna!', 'Tři prkna!'],
+      wrong: 'Molo je ze dřeva. Vyber dole hnědé dřevo.',
+      success: 'Hurá! Molo je hotové. Teď se dá dojít skoro až k pirátské lodi!',
+    },
   } satisfies Record<MissionId, { title: string; intro: string; hint: string; success: string } & Record<string, unknown>>,
 
   treasure: {
@@ -174,6 +218,20 @@ export const CS = {
     done: 'Klíč z tohoto světa už máš! Jdi objevit další svět a získej další klíč.',
     notDone: (left: string) => `Truhla s pokladem má tři zámky. Klíč dostaneš, když splníš všechny úkoly. Zbývá ti ještě ${left}. Ťukni na vlajku a pusť se do toho!`,
     left: ['', 'jeden úkol', 'dva úkoly', 'tři úkoly', 'čtyři úkoly', 'pět úkolů', 'šest úkolů'],
+    allKeys: 'Máš všechny tři klíče! Na Pirátském ostrově se pod palmou objevilo velké červené X. Tam je zakopaný poklad!',
+    found: 'Poklad už jste vykopali! Jste ti nejlepší piráti na světě!',
+  },
+
+  /** Velký poklad pod palmou (Pirátský ostrov). */
+  dig: {
+    xAppeared: 'Podívej! Pod palmou je velké červené X. Tam je zakopaný poklad! Pošli tam Ondru nebo Lauru.',
+    xNeedsFriend: 'Tady je poklad! Ťukni na Ondru nebo Lauru a pošli je k červenému X.',
+    xLocked: 'Tady je něco zakopané. Až budeš mít všechny tři klíče, můžeš kopat!',
+    start: 'Kopeme! Hrabej prstem v písku, dokud nenajdeš truhlu.',
+    progress: ['Hrabeme!', 'Už tam něco je!', 'Ještě kousek!'],
+    chest: 'Truhla! Ťukni na ni a otevřeme ji třemi klíči.',
+    open: 'Klíč z ostrova, klíč z Ledového království a klíč z Pirátského ostrova… Cvak! Hurá, poklad! Zlato, drahokamy a koruna! Jste nejlepší piráti na světě!',
+    done: 'Hotovo',
   },
 
   /** Když se Ondra a Laura potkají – srdíčka, výskok a krátký rozhovor. */
@@ -238,6 +296,7 @@ export const CS = {
     welcome: {
       island: 'Jsme zpátky na ostrově s hradem!',
       ice: 'Vítej v Ledovém království! Je tu sníh, led a ledový hrad. Princezna Vločka a sněhulák Bobek potřebují pomoc!',
+      pirate: 'Ahoj, piráti! Vítej na Pirátském ostrově. Jsou tu palmy, pirát Fousek a kostlivec Kostík. A někde je zakopaný poklad!',
     },
     noTrip: 'Lodička čeká. Až získáš klíč, poplujeme do dalšího světa!',
   },
@@ -258,6 +317,34 @@ export const CS = {
       hit: ['Bum!', 'Prásk!', 'Paráda!', 'Trefa!'],
       done: 'Hurá! Hrad je zbouraný! Ťukni na zelenou fajfku a jdeme zpátky.',
     },
+    pirate: {
+      name: 'Pirát Fousek',
+      tapNeedsFriend: 'Pirát Fousek tě volá! Pošli k němu Ondru nebo Lauru.',
+      hello: 'Ahoj, plavčíci! Já jsem pirát Fousek. Moje loď má bílé plachty a to je nuda! Obarvíme je barevnými balónky?',
+      shoot: 'Zatáhni za prak a pošli barevný balónek na plachtu!',
+      done: 'Jů! Moje loď je barevná jako duha! Děkuju, plavčíci!',
+      ship: 'To je pirátská loď piráta Fouska! Má bílé plachty. Pirát Fousek stojí u laguny.',
+    },
+    skeleton: {
+      name: 'Kostlivec Kostík',
+      tapNeedsFriend: 'Kostlivec Kostík chce hrát! Pošli k němu Ondru nebo Lauru.',
+      hello: 'Ahoj! Já jsem Kostík. Rád tančím a chrastím kostičkami! Zahrajeme si pexeso? Najdi dvě stejné kartičky!',
+      done: 'Hurá! Našel jsi všechny dvojice! Máš lepší paměť než já. Já mám v hlavě jen průvan!',
+    },
+  },
+
+  /** Pexeso kostlivce Kostíka. */
+  memory: {
+    hint: 'Ťukni na dvě kartičky. Když jsou stejné, zůstanou otočené.',
+    pair: ['Stejné!', 'Dvojice!', 'Výborně!'],
+    again: 'Tyhle nejsou stejné. Zkus to znovu!',
+    names: { parrot: 'Papoušek', anchor: 'Kotva', shell: 'Mušle', crab: 'Krab', palm: 'Palma', fish: 'Rybička' } as Record<string, string>,
+  },
+
+  /** Barevná lodní bitva piráta Fouska. */
+  paint: {
+    colors: ['Červená!', 'Žlutá!', 'Modrá!', 'Zelená!', 'Růžová!', 'Oranžová!'],
+    miss: ['Skoro!', 'Ještě kousek!', 'Zkus to znovu!'],
   },
 
   puzzle: {
@@ -278,7 +365,7 @@ export const CS = {
 
   worlds: {
     title: 'Mapa světů',
-    names: ['Ostrov s hradem', 'Ledové království', 'Ostrov s majákem'],
+    names: ['Ostrov s hradem', 'Ledové království', 'Pirátský ostrov'],
     noKey: 'Tohle je mapa světů. Jsi na ostrově s hradem. Až tu splníš všechny úkoly a získáš klíč, otevře se cesta dál.',
     withKey: 'Tohle je mapa světů. Ťukni na otevřený ostrov a poplujeme lodičkou!',
     here: 'Tady jsi teď!',
@@ -398,6 +485,9 @@ export const CS = {
       quiz: '🎁 Úkol z bedny / dárku',
       puzzle: '🧩 Puzzle princezny',
       sling: '🎯 Prak sněhuláka',
+      paint: '🎨 Barevná lodní bitva (pirát)',
+      memory: '🃏 Pexeso (kostlivec)',
+      dig: '⛏️ Kopání pokladu',
       travel: '⛵ Plavba lodičkou',
     },
   },

@@ -163,8 +163,8 @@ export class SceneView {
   private snow: THREE.Points | null = null;
 
   /** Vzhled světa: letní obloha, nebo zimní obloha se sněžením. */
-  setTheme(theme: 'summer' | 'winter'): void {
-    this.scene.background = new THREE.Color(theme === 'winter' ? '#b9d7ee' : '#8fd3f5');
+  setTheme(theme: 'summer' | 'winter' | 'tropic'): void {
+    this.scene.background = new THREE.Color(theme === 'winter' ? '#b9d7ee' : theme === 'tropic' ? '#7fd8e6' : '#8fd3f5');
     if (this.snow) {
       this.scene.remove(this.snow);
       this.snow = null;

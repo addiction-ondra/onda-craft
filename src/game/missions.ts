@@ -1,7 +1,18 @@
 import type { BlockType } from './blocks';
 import { bridgeProgress, doghouseStatus, hasBridge, keyOf, WORLD_H, type Vec3, type World } from './world';
-import { ICE_PLANS, type WorldId } from './worlds';
-import { patternToFill, placeNumberBalls, placePatternStart, rowStatus, snowmanSlots, stackStatus, towerSlots } from './iceMissions';
+import { ICE_PLANS, PIRATE_PLANS, type WorldId } from './worlds';
+import {
+  patternToFill,
+  placeNumberBalls,
+  placePatternStart,
+  rowStatus,
+  snowmanSlots,
+  stackStatus,
+  towerSlots,
+  type PlanSlot,
+  type PlanStatus,
+} from './iceMissions';
+import { flagSlots, flagsToFill, mastSlots, pierSlots, squareSlots } from './pirateMissions';
 
 export type MissionId =
   // Ostrov s hradem
@@ -15,7 +26,13 @@ export type MissionId =
   | 'tower5'
   | 'pattern'
   | 'crystals'
-  | 'numbers';
+  | 'numbers'
+  // Pirátský ostrov
+  | 'coins'
+  | 'mast'
+  | 'flags'
+  | 'square'
+  | 'pier';
 
 /** Zvířátka a jídlo, které mají ráda (mise 4). Barva kostky = jídlo. */
 export type FeedableAnimal = 'sheep' | 'chick' | 'dog';
@@ -83,7 +100,51 @@ export const MISSIONS: MissionDef[] = [
   { id: 'pattern', world: 'ice', number: 3, target: 3 },
   { id: 'crystals', world: 'ice', number: 4, target: 3 },
   { id: 'numbers', world: 'ice', number: 5, target: 5 },
+  { id: 'coins', world: 'pirate', number: 1, target: 4 },
+  { id: 'mast', world: 'pirate', number: 2, target: 4, suggestedBlock: 'wood' },
+  { id: 'flags', world: 'pirate', number: 3, target: 3 },
+  { id: 'square', world: 'pirate', number: 4, target: 8, suggestedBlock: 'stone' },
+  { id: 'pier', world: 'pirate', number: 5, target: 3, suggestedBlock: 'wood' },
 ];
+
+/**
+ * Mise se „svítícími místy“ podle plánu (sněhulák, věž, vzory, čtverec, molo).
+ * stack = staví se odspodu, row = každé místo zvlášť.
+ */
+const PLAN_MISSIONS: Partial<Record<MissionId, { kind: 'stack' | 'row'; slots: () => PlanSlot[] }>> = {
+  snowman: { kind: 'stack', slots: snowmanSlots },
+  tower5: { kind: 'stack', slots: towerSlots },
+  pattern: { kind: 'row', slots: patternToFill },
+  mast: { kind: 'stack', slots: mastSlots },
+  flags: { kind: 'row', slots: flagsToFill },
+  square: { kind: 'row', slots: squareSlots },
+  pier: { kind: 'row', slots: pierSlots },
+};
+
+export const isPlanMission = (id: MissionId | undefined | null): boolean => !!id && id in PLAN_MISSIONS;
+export const planSlots = (id: MissionId): PlanSlot[] => PLAN_MISSIONS[id]?.slots() ?? [];
+/** Stav plánu mise (null = mise nemá svítící místa). */
+export function planStatus(id: MissionId, w: World): PlanStatus | null {
+  const p = PLAN_MISSIONS[id];
+  if (!p) return null;
+  return p.kind === 'stack' ? stackStatus(w, p.slots()) : rowStatus(w, p.slots());
+}
+
+/** Položí do světa začátek vzoru (vlajky). */
+function placeFlagsStart(w: World): void {
+  for (const s of flagSlots().slice(0, PIRATE_PLANS.flags.given)) {
+    w.deleteRaw(s.pos);
+    w.setRaw(s.pos, s.block!);
+  }
+}
+
+/** Hledací mise: kde se schovávají cíle a jaká je to kostka. */
+const SEARCH: Partial<Record<MissionId, { spots: () => Array<[number, number]>; block: BlockType }>> = {
+  findRed: { spots: () => RED_HIDING_SPOTS, block: 'red' },
+  crystals: { spots: () => ICE_PLANS.crystalSpots, block: 'crystal' },
+  coins: { spots: () => PIRATE_PLANS.coinSpots, block: 'gold' },
+};
+export const isSearchMission = (id: MissionId | undefined | null): boolean => !!id && id in SEARCH;
 
 /** Mise jednoho světa (v pořadí). */
 export const missionsFor = (world: WorldId): MissionDef[] => MISSIONS.filter((m) => m.world === world);
@@ -123,10 +184,10 @@ export function startMission(id: MissionId, world: World, rng: () => number = Ma
   const def = getMission(id);
   const state: MissionState = { id, progress: 0, target: def.target, targets: [], otherTries: 0, done: false };
 
-  if (id === 'findRed' || id === 'crystals') {
-    const spots = id === 'findRed' ? RED_HIDING_SPOTS : ICE_PLANS.crystalSpots;
-    const block: BlockType = id === 'findRed' ? 'red' : 'crystal';
-    for (const [x, z] of shuffle(spots, rng)) {
+  const search = SEARCH[id];
+  if (search) {
+    const block = search.block;
+    for (const [x, z] of shuffle(search.spots(), rng)) {
       if (state.targets.length >= def.target) break;
       const y = world.topY(x, z);
       if (y < 1 || y >= WORLD_H) continue;
@@ -137,12 +198,10 @@ export function startMission(id: MissionId, world: World, rng: () => number = Ma
     state.target = state.targets.length;
   }
 
-  if (id === 'snowman') state.progress = Math.min(stackStatus(world, snowmanSlots()).filled, def.target - 1);
-  if (id === 'tower5') state.progress = Math.min(stackStatus(world, towerSlots()).filled, def.target - 1);
-  if (id === 'pattern') {
-    placePatternStart(world);
-    state.progress = Math.min(rowStatus(world, patternToFill()).filled, def.target - 1);
-  }
+  if (id === 'pattern') placePatternStart(world);
+  if (id === 'flags') placeFlagsStart(world);
+  const plan = planStatus(id, world);
+  if (plan) state.progress = Math.min(plan.filled, def.target - 1);
   if (id === 'numbers') state.targets = placeNumberBalls(world, rng);
 
   if (id === 'bridge') {
@@ -161,13 +220,15 @@ export function startMission(id: MissionId, world: World, rng: () => number = Ma
 
 /** Po načtení uložené hry: vrátí do světa chybějící cílové kostky. */
 export function restoreMission(state: MissionState, world: World): void {
-  if (state.id === 'findRed' || state.id === 'crystals') {
-    for (const p of state.targets) if (!world.has(p)) world.setRaw(p, state.id === 'findRed' ? 'red' : 'crystal');
+  const search = SEARCH[state.id];
+  if (search) {
+    for (const p of state.targets) if (!world.has(p)) world.setRaw(p, search.block);
   }
   if (state.id === 'numbers') {
     for (const p of state.targets) if (!world.has(p)) world.setRaw(p, 'snow');
   }
   if (state.id === 'pattern') placePatternStart(world);
+  if (state.id === 'flags') placeFlagsStart(world);
 }
 
 /** Číslo sněhové koule na místě (1–5), nebo null. */
@@ -178,7 +239,7 @@ export const numberAt = (state: MissionState | null, pos: Vec3): number | null =
 };
 
 export const isMissionTarget = (state: MissionState | null, pos: Vec3): boolean =>
-  !!state && !state.done && (state.id === 'findRed' || state.id === 'crystals') && state.targets.some((t) => keyOf(t) === keyOf(pos));
+  !!state && !state.done && isSearchMission(state.id) && state.targets.some((t) => keyOf(t) === keyOf(pos));
 
 /** Čistý reducer misí. */
 export function reduceMission(state: MissionState, event: GameEvent, world: World): MissionResult {
@@ -196,7 +257,8 @@ export function reduceMission(state: MissionState, event: GameEvent, world: Worl
     }
 
     case 'findRed':
-    case 'crystals': {
+    case 'crystals':
+    case 'coins': {
       if (event.kind !== 'collected') return { state, feedback: 'none' };
       const k = keyOf(event.pos);
       if (!state.targets.some((t) => keyOf(t) === k)) return { state, feedback: 'none' };
@@ -244,12 +306,13 @@ export function reduceMission(state: MissionState, event: GameEvent, world: Worl
 
     case 'snowman':
     case 'tower5':
-    case 'pattern': {
+    case 'pattern':
+    case 'mast':
+    case 'flags':
+    case 'square':
+    case 'pier': {
       if (event.kind !== 'placed' && event.kind !== 'removed') return { state, feedback: 'none' };
-      const st =
-        state.id === 'pattern'
-          ? rowStatus(world, patternToFill())
-          : stackStatus(world, state.id === 'snowman' ? snowmanSlots() : towerSlots());
+      const st = planStatus(state.id, world)!;
       if (st.done) return { state: { ...state, progress: state.target, done: true }, feedback: 'complete' };
       // Špatný materiál na svítícím místě = jemná rada (controller kostku vrátí).
       if (event.kind === 'placed' && st.wrong.some((w) => keyOf(w.pos) === keyOf(event.pos))) {

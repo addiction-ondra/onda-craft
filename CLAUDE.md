@@ -72,6 +72,9 @@ Před commitem vždy: `npm run lint && npm test && npm run build`.
   (5 na svět). Formát uložení v4 ukládá každý svět zvlášť. Přechod mezi světy jen loďkou (postavy k ní dojdou).
 - Frený je ve všech světech (`animals` ve `WorldDef`) a chodí za dětmi (`game/follow.ts`, `followTick`);
   nové světy ho musí mít také. Vlastní akce (domeček, pohlazení) ho zastaví přes `rest()`.
+- Mise se svítícími místy přidávej do `PLAN_MISSIONS`, hledací do `SEARCH` (`missions.ts`) – ovladač je obslouží sám.
+- Minihry postav: `NPC_GAME` v ovladači (postava → overlay). Hra musí mít ✖, 🔄 a po výhře velké ✔; žádná prohra.
+- Kostlivec a piráti jen přátelští a veselí (žádné lebky se zkříženými hnáty, zbraně, strašení); „lodní bitva“ = barvy.
 - Postavy v novém světě jen vlastní – žádná jména ani vzhled postav z filmů/her (Disney apod.).
 - Výkon: kostky jen přes `InstancedMesh`, žádné stíny, `pixelRatio ≤ 2`, render
   jen když je něco „dirty“ nebo běží animace.

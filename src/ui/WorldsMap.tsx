@@ -4,14 +4,14 @@ import { CS } from '../i18n/cs';
 import { IconClose } from './Icons';
 
 /**
- * Mapa světů: ostrov s hradem, Ledové království a další ostrov (zatím se staví).
+ * Mapa světů: ostrov s hradem, Ledové království a Pirátský ostrov.
  * Otevřený svět jde ťuknutím navštívit – děti doplují lodičkou.
  */
 export function WorldsMap({ game, current, keys }: { game: GameController; current: WorldId; keys: string[] }) {
   const islands: Array<{ id: WorldId | null; x: number; y: number; color: string; emoji: string }> = [
     { id: 'island', x: 90, y: 170, color: '#5cc43c', emoji: '🏰' },
     { id: 'ice', x: 250, y: 95, color: '#e7f5ff', emoji: '❄️' },
-    { id: null, x: 410, y: 165, color: '#f4d470', emoji: '🗼' },
+    { id: 'pirate', x: 410, y: 165, color: '#f4d470', emoji: '🏝️' },
   ];
   return (
     <div className="overlay dim">

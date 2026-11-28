@@ -132,9 +132,10 @@ function bubbleMaterial(b: Exclude<Bubble, null>): THREE.SpriteMaterial {
 }
 
 export type AnimalKind = 'dog' | 'sheep' | 'chick';
-export type NpcKind = 'princess' | 'snowman' | 'boat';
+export type NpcKind = 'princess' | 'snowman' | 'boat' | 'pirate' | 'skeleton' | 'ship';
 export type CreatureKind = AnimalKind | CharacterId | NpcKind;
-export const isNpcKind = (k: CreatureKind): k is NpcKind => k === 'princess' || k === 'snowman' || k === 'boat';
+export const isNpcKind = (k: CreatureKind): k is NpcKind =>
+  k === 'princess' || k === 'snowman' || k === 'boat' || k === 'pirate' || k === 'skeleton' || k === 'ship';
 
 export const isCharacterKind = (k: CreatureKind): k is CharacterId => k === 'ondra' || k === 'lauriska';
 
@@ -172,6 +173,8 @@ interface Model {
   wave?: THREE.Group;
   /** Části, které se rozpadají a skládají (sněhulák): [střed, hlava]. */
   parts?: THREE.Group[];
+  /** Tančící kostlivec: [levá ruka, pravá ruka, lebka]. */
+  dance?: THREE.Group[];
 }
 
 const EYE = '#1b1b1b';
@@ -394,6 +397,120 @@ function buildBoat(): Model {
   return { root, legs: [], arms: [], height: 1.4 };
 }
 
+/** Pirát Fousek – vlastní postava: červený šátek, černé vousy, pruhované triko, papoušek na rameni. */
+function buildPirate(): Model {
+  const g = new THREE.Group();
+  const legs = [limb(0.13, 0.36, 0.14, '#1c3d7a', -0.09, 0.38, 0, '#3b2414'), limb(0.13, 0.36, 0.14, '#1c3d7a', 0.09, 0.38, 0, '#3b2414')];
+  legs.forEach((l) => g.add(l));
+  // pruhované triko
+  g.add(box(0.4, 0.42, 0.24, '#f8f9fa', 0, 0.6, 0));
+  for (const y of [0.46, 0.6, 0.74]) g.add(box(0.41, 0.05, 0.25, '#e03131', 0, y, 0));
+  g.add(box(0.42, 0.06, 0.26, '#3b2414', 0, 0.41, 0)); // opasek
+  g.add(box(0.08, 0.07, 0.02, '#ffd43b', 0, 0.41, 0.135)); // přezka
+  const armL = limb(0.1, 0.36, 0.11, '#f8f9fa', -0.26, 0.8, 0);
+  armL.add(box(0.1, 0.1, 0.11, SKIN, 0, -0.34, 0));
+  g.add(armL);
+  const armR = limb(0.1, 0.36, 0.11, '#f8f9fa', 0.26, 0.8, 0);
+  armR.add(box(0.1, 0.1, 0.11, SKIN, 0, -0.34, 0));
+  g.add(armR);
+  // hlava
+  g.add(box(0.36, 0.34, 0.32, SKIN, 0, 1.0, 0));
+  g.add(box(0.06, 0.07, 0.02, EYE, -0.08, 1.05, 0.16));
+  g.add(box(0.06, 0.07, 0.02, EYE, 0.08, 1.05, 0.16));
+  g.add(box(0.08, 0.06, 0.04, '#e8a87c', 0, 0.99, 0.17)); // nos
+  // velké černé vousy (Fousek!)
+  g.add(box(0.38, 0.14, 0.06, '#212529', 0, 0.88, 0.15));
+  g.add(box(0.24, 0.1, 0.06, '#212529', 0, 0.79, 0.15));
+  g.add(box(0.16, 0.03, 0.02, '#fff', 0, 0.92, 0.19)); // úsměv mezi vousy
+  // červený šátek s uzlíkem
+  g.add(box(0.4, 0.12, 0.36, '#e03131', 0, 1.2, 0));
+  g.add(box(0.12, 0.12, 0.08, '#e03131', 0, 1.14, -0.2));
+  for (const [x, z] of [
+    [-0.1, 0.18],
+    [0.1, 0.18],
+  ])
+    g.add(box(0.04, 0.04, 0.01, '#fff', x, 1.22, z)); // puntíky
+  // papoušek na rameni
+  const parrot = new THREE.Group();
+  parrot.position.set(0.24, 0.86, 0);
+  parrot.add(box(0.12, 0.16, 0.12, '#40c057', 0, 0.08, 0));
+  parrot.add(box(0.11, 0.1, 0.11, '#40c057', 0, 0.21, 0.02));
+  parrot.add(box(0.04, 0.04, 0.06, '#ffd43b', 0, 0.2, 0.1)); // zobák
+  parrot.add(box(0.03, 0.03, 0.01, EYE, 0.05, 0.23, 0.07));
+  parrot.add(box(0.06, 0.12, 0.04, '#e03131', 0, -0.02, -0.07)); // ocásek
+  g.add(parrot);
+  return { root: g, legs: [], arms: [], height: 1.3, wave: armR };
+}
+
+/** Kostlivec Kostík – veselý tanečník: kulatá lebka s úsměvem, kostičky, fialový šátek. */
+function buildSkeleton(): Model {
+  const g = new THREE.Group();
+  const bone = '#f1f3f5';
+  const dark = '#343a40';
+  for (const x of [-0.09, 0.09]) {
+    g.add(box(0.06, 0.38, 0.06, bone, x, 0.2, 0));
+    g.add(box(0.12, 0.05, 0.16, bone, x, 0.02, 0.03)); // chodidla
+  }
+  g.add(box(0.3, 0.08, 0.16, bone, 0, 0.42, 0)); // pánev
+  g.add(box(0.06, 0.36, 0.06, bone, 0, 0.62, 0)); // páteř
+  for (const y of [0.56, 0.66, 0.76]) g.add(box(0.3, 0.04, 0.16, bone, 0, y, 0)); // žebra
+  const arms: THREE.Group[] = [];
+  for (const s of [-1, 1]) {
+    const a = new THREE.Group();
+    a.position.set(s * 0.2, 0.8, 0);
+    a.add(box(0.06, 0.32, 0.06, bone, 0, -0.16, 0));
+    a.add(box(0.1, 0.08, 0.08, bone, 0, -0.34, 0)); // ruka
+    g.add(a);
+    arms.push(a);
+  }
+  const skull = new THREE.Group();
+  skull.position.y = 0.88;
+  skull.add(box(0.38, 0.32, 0.34, bone, 0, 0.18, 0));
+  skull.add(box(0.28, 0.08, 0.28, bone, 0, 0.02, 0.02)); // čelist
+  // velké kulaté oči s jiskrou – přátelský výraz
+  for (const x of [-0.09, 0.09]) {
+    skull.add(box(0.11, 0.11, 0.02, dark, x, 0.2, 0.17));
+    skull.add(box(0.03, 0.03, 0.01, '#fff', x + 0.02, 0.23, 0.185));
+  }
+  skull.add(box(0.04, 0.04, 0.02, dark, 0, 0.11, 0.17)); // nosík
+  skull.add(box(0.18, 0.03, 0.02, dark, 0, 0.04, 0.15)); // úsměv
+  skull.add(box(0.4, 0.08, 0.36, '#9775fa', 0, 0.34, 0)); // fialový šátek
+  skull.add(box(0.1, 0.1, 0.06, '#9775fa', 0.12, 0.3, -0.18));
+  g.add(skull);
+  return { root: g, legs: [], arms: [], height: 1.3, dance: [arms[0], arms[1], skull] };
+}
+
+/** Pirátská loď piráta Fouska (stojí na moři mimo ostrov). Přátelská – vlajka s hvězdou. */
+function buildShip(): Model {
+  const g = new THREE.Group();
+  const hull = '#8b4513';
+  const dark = '#5c2b12';
+  // moře pod lodí (ostrov stojí v moři)
+  const sea = new THREE.Mesh(new THREE.BoxGeometry(5.5, 0.1, 3.2), new THREE.MeshLambertMaterial({ color: '#3d8fe0', transparent: true, opacity: 0.85 }));
+  sea.position.y = -0.1;
+  g.add(sea);
+  g.add(box(3.6, 0.5, 1.3, hull, 0, 0.25, 0));
+  g.add(box(3.8, 0.16, 1.4, dark, 0, 0.55, 0));
+  g.add(box(0.5, 0.5, 1.2, hull, -1.7, 0.7, 0)); // záď
+  g.add(box(0.5, 0.3, 0.6, hull, 2.0, 0.5, 0)); // příď
+  for (const x of [-0.9, 0, 0.9]) g.add(box(0.18, 0.18, 0.02, '#ffd43b', x, 0.35, 0.66)); // okénka
+  for (const [x, h] of [
+    [-0.6, 2.2],
+    [0.8, 2.6],
+  ]) {
+    g.add(box(0.1, h, 0.1, '#6b3f1d', x, 0.6 + h / 2, 0));
+    g.add(box(0.06, 1.0, 1.1, '#fff9db', x + 0.1, 0.9 + h / 2, 0)); // plachta
+    g.add(box(0.06, 0.08, 1.2, '#6b3f1d', x + 0.1, 1.42 + h / 2, 0)); // ráhno
+  }
+  // vlajka: červená s žlutou hvězdou
+  g.add(box(0.02, 0.3, 0.5, '#e03131', 0.8, 3.65, 0.27));
+  g.add(box(0.03, 0.1, 0.1, '#ffd43b', 0.8, 3.65, 0.27));
+  g.rotation.y = Math.PI / 2; // podél okraje ostrova
+  const root = new THREE.Group();
+  root.add(g);
+  return { root, legs: [], arms: [], height: 3.8 };
+}
+
 function buildModel(kind: CreatureKind): Model {
   switch (kind) {
     case 'dog':
@@ -412,6 +529,12 @@ function buildModel(kind: CreatureKind): Model {
       return buildSnowman();
     case 'boat':
       return buildBoat();
+    case 'pirate':
+      return buildPirate();
+    case 'skeleton':
+      return buildSkeleton();
+    case 'ship':
+      return buildShip();
   }
 }
 
@@ -472,7 +595,7 @@ export class Animal {
     this.group.add(shadow);
 
     // neviditelná „klikací“ krabička – malé postavičky se trefují snáz
-    const hitW = kind === 'boat' ? 1.7 : 0.8;
+    const hitW = kind === 'boat' ? 1.7 : kind === 'ship' ? 2.5 : 0.8;
     const hit = new THREE.Mesh(new THREE.BoxGeometry(hitW, this.model.height, hitW), new THREE.MeshBasicMaterial({ visible: false }));
     hit.position.y = this.model.height / 2;
     this.model.root.add(hit);
@@ -583,7 +706,7 @@ export class Animal {
     this.time += dt;
 
     // Někdo postavil kostku přímo na postavičku/zvířátko → vyleze nahoru.
-    if (this.t >= 1 && this.kind !== 'boat') {
+    if (this.t >= 1 && this.kind !== 'boat' && this.kind !== 'ship') {
       let y = this.cell.y;
       if (this.isCharacter) {
         while (y < WORLD_H - 2 && !isStandable(world, { ...this.cell, y }) && world.has({ ...this.cell, y })) y++;
@@ -677,6 +800,18 @@ export class Animal {
       head.position.set(-0.5 * e, 0.94 - 0.8 * e, 0.3 * e);
       head.rotation.z = 0.9 * e;
       if (k === 0) head.position.y = 0.94 + Math.abs(Math.sin(t * 2)) * 0.03;
+    }
+    if (this.model.dance) {
+      // Kostík tančí: ruce nahoru a dolů, lebka se kývá do rytmu
+      const [l, r, skull] = this.model.dance;
+      l.rotation.z = -0.4 - Math.abs(Math.sin(t * 4)) * 1.6;
+      r.rotation.z = 0.4 + Math.abs(Math.sin(t * 4 + 1.5)) * 1.6;
+      skull.rotation.z = Math.sin(t * 4) * 0.18;
+      skull.position.y = 0.88 + Math.abs(Math.sin(t * 8)) * 0.04;
+    }
+    if (this.kind === 'ship') {
+      this.model.root.position.y = Math.sin(t * 1.2) * 0.06 - 0.15;
+      this.model.root.rotation.x = Math.sin(t * 0.9) * 0.03;
     }
     if (this.kind === 'boat') {
       this.model.root.position.y = Math.sin(t * 1.8) * 0.05 - 0.15;

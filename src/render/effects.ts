@@ -38,6 +38,27 @@ export class Effects {
   }
 
   /** Bílý kroužek tam, kam postavička jde (null = skrýt). */
+  /** Velké červené X na zemi (tady je zakopaný poklad). */
+  private treasureX: THREE.Group | null = null;
+  setTreasureX(p: Vec3 | null): void {
+    if (this.treasureX) {
+      this.group.remove(this.treasureX);
+      this.treasureX = null;
+    }
+    if (!p) return;
+    const g = new THREE.Group();
+    const m = new THREE.MeshBasicMaterial({ color: '#e03131' });
+    // ramena podél mřížky – z kamery (45°) pak vypadají jako písmeno X
+    for (const r of [0, Math.PI / 2]) {
+      const bar = new THREE.Mesh(new THREE.BoxGeometry(1.15, 0.06, 0.24), m);
+      bar.rotation.y = r;
+      g.add(bar);
+    }
+    g.position.set(p.x + 0.5, p.y + 0.04, p.z + 0.5);
+    this.treasureX = g;
+    this.group.add(g);
+  }
+
   setWalkTarget(p: Vec3 | null): void {
     this.walkTarget.visible = !!p;
     if (p) this.walkTarget.position.set(p.x + 0.5, p.y + 0.04, p.z + 0.5);
@@ -154,6 +175,7 @@ export class Effects {
 
   update(dt: number): void {
     this.time += dt;
+    if (this.treasureX) this.treasureX.scale.setScalar(1 + Math.abs(Math.sin(this.time * 3)) * 0.12);
     for (let i = this.particles.length - 1; i >= 0; i--) {
       const pt = this.particles[i];
       pt.life -= dt;

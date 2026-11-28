@@ -117,6 +117,88 @@ export function MissionDemo({ id }: { id: MissionId }) {
       </div>
     );
   }
+  if (id === 'mast') {
+    // dřevěné kostky se staví na sebe, nahoře vyjede plachta
+    return (
+      <div className="demo demo-stack" aria-hidden>
+        <div className="demo-ground sand" />
+        <div className="demo-column">
+          {[0, 1, 2, 3].map((i) => (
+            <div key={i} className="demo-stack-item" style={{ animationDelay: `${0.4 + i * 0.7}s` }}>
+              <img src={iconFor('wood')} alt="" />
+              <span className="demo-num side">{i + 1}</span>
+            </div>
+          ))}
+        </div>
+        <div className="demo-dog demo-snowfriend">⛵</div>
+      </div>
+    );
+  }
+  if (id === 'flags') {
+    const row = ['red', 'sand', 'red', 'sand', 'red', 'sand'] as const;
+    return (
+      <div className="demo demo-pattern" aria-hidden>
+        <div className="demo-ground sand" />
+        {row.map((b, i) => (
+          <div key={i} className={`demo-pattern-item ${i >= 3 ? 'todo' : ''}`} style={{ left: `${4 + i * 16}%`, animationDelay: `${1 + (i - 3) * 0.9}s` }}>
+            <img src={iconFor(b)} alt="" />
+            {i >= 3 && <span className="demo-q">?</span>}
+          </div>
+        ))}
+      </div>
+    );
+  }
+  if (id === 'square') {
+    // 8 kostek se postupně rozsvítí dokola – vznikne čtverec
+    const ring = [
+      [0, 0],
+      [1, 0],
+      [2, 0],
+      [2, 1],
+      [2, 2],
+      [1, 2],
+      [0, 2],
+      [0, 1],
+    ];
+    return (
+      <div className="demo demo-square" aria-hidden>
+        <div className="demo-ground" />
+        <div className="demo-square-grid">
+          {ring.map(([x, z], i) => (
+            <img key={i} src={iconFor('stone')} alt="" className="demo-square-item" style={{ gridColumn: x + 1, gridRow: z + 1, animationDelay: `${0.3 + i * 0.5}s` }} />
+          ))}
+        </div>
+      </div>
+    );
+  }
+  if (id === 'pier') {
+    return (
+      <div className="demo demo-bridge" aria-hidden>
+        <div className="demo-bank left" />
+        <div className="demo-river" />
+        <img className="demo-bridge-block b1" src={iconFor('wood')} alt="" />
+        <img className="demo-bridge-block b2" src={iconFor('wood')} alt="" />
+        <div className="demo-dog">⛵</div>
+      </div>
+    );
+  }
+  if (id === 'coins') {
+    return (
+      <div className="demo demo-red" aria-hidden>
+        <div className="demo-ground sand" />
+        {[14, 46, 78].map((left, i) => (
+          <div key={i} className="demo-hidden" style={{ left: `${left}%` }}>
+            <img className="demo-red-block" src={iconFor('gold')} alt="" style={{ animationDelay: `${0.8 + i * 1.2}s` }} />
+            <img className="demo-bush" src={iconFor('leaves')} alt="" />
+            <span className="demo-sparkle" style={{ animationDelay: `${0.8 + i * 1.2}s` }}>
+              ✨
+            </span>
+          </div>
+        ))}
+        <div className="demo-hand demo-hand-red">👆</div>
+      </div>
+    );
+  }
   if (id === 'findRed') {
     return (
       <div className="demo demo-red" aria-hidden>

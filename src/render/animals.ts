@@ -439,6 +439,9 @@ export class Animal {
   private time = Math.random() * 10;
   private bubble: THREE.Sprite | null = null;
   private bubbleTimer = 0;
+  /** Chodí za dětmi (Frený) – sám se netoulá, cestu mu dává ovladač. */
+  follower = false;
+  private speed = 2.4;
   /** Kolik kostek je tvor vysoký pro hledání cesty (děti 2, zvířátka 1). */
   readonly bodyHeight: number;
 
@@ -535,6 +538,11 @@ export class Animal {
     this.wait = seconds;
   }
 
+  /** Odpočívá (pohlazení, domeček) – za dětmi zatím nepůjde. */
+  get resting(): boolean {
+    return this.wait > 0;
+  }
+
   setSelected(on: boolean): void {
     this.marker.visible = on;
   }
@@ -546,7 +554,8 @@ export class Animal {
   }
 
   /** Projde zadanou cestu (pole po poli). `onArrive(true)` = došel na konec. */
-  walk(path: Vec3[], onArrive?: (ok: boolean) => void): void {
+  walk(path: Vec3[], onArrive?: (ok: boolean) => void, speed = 2.4): void {
+    this.speed = speed;
     this.path = [...path];
     this.onArrive = onArrive ?? null;
     if (path.length === 0) this.finish(true);
@@ -593,12 +602,14 @@ export class Animal {
     } else if (this.path.length > 0) {
       const next = this.path.shift()!;
       const ok = isStandable(world, next, this.bodyHeight) && next.y - this.cell.y <= 1;
-      if (ok) this.startSegment(next, 2.4);
+      if (ok) this.startSegment(next, this.speed);
       else this.finish(false); // cestu mezitím někdo zastavěl
     } else {
       if (this.onArrive) this.finish(true);
       this.phase = 0;
-      if (!this.isCharacter && !this.isStatic) {
+      if (this.follower) {
+        this.wait = Math.max(0, this.wait - dt);
+      } else if (!this.isCharacter && !this.isStatic) {
         this.wait -= dt;
         if (this.wait <= 0) {
           this.wait = 1.5 + Math.random() * 3;

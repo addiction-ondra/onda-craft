@@ -160,7 +160,8 @@ export const WORLDS: Record<WorldId, WorldDef> = {
     boxSpots: GIFT_SPOTS,
     palette: PALETTES.ice,
     spawn: { ondra: { x: 2, y: 1, z: 2 }, lauriska: { x: 3, y: 1, z: 2 } },
-    animals: [],
+    // Frený jezdí s dětmi do všech světů
+    animals: [{ kind: 'dog', pos: { x: 3, y: 1, z: 3 } }],
     npcs: [
       { kind: 'princess', pos: { x: 15, y: 1, z: 12 } },
       { kind: 'snowman', pos: { x: 8, y: 1, z: 15 } },

@@ -11,6 +11,13 @@ ovečkou a kuřátkem. Ovládání dotykem, minimum textu, české hlasové poky
 
 Architektura a roadmapa: [PLAN.md](PLAN.md) · pravidla vývoje: [CLAUDE.md](CLAUDE.md)
 
+## Co umí verze 0.7.3
+
+- **Frený chodí za dětmi ve všech světech** – za dítětem, se kterým se zrovna hraje
+  (naposledy vybraným / poslaným). Pluje s nimi i loďkou do Ledového království.
+- Ťukni na Freného, když je vybraný Ondra nebo Laura → dítě k němu dojde a pohladí ho („Frený, hudlánka!“).
+- Na ostrově Frený dál vleze do hotového domečku a při stavbě domečku počká.
+
 ## Co umí verze 0.7.2
 
 - Prak u sněhuláka Bobka: **3 hrady na výběr** (malý ⭐, střední ⭐⭐, velký ⭐⭐⭐ – obrázkem, bez čtení),

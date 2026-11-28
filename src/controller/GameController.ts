@@ -42,6 +42,7 @@ import { dropToStand, findPath, reachableCells, walkGoalFromTap, type PathResult
 import { generateFreshQuiz, isCorrect, quizKey, type Quiz } from '../game/quiz';
 import { patternToFill, rowStatus, snowmanSlots, stackStatus, towerSlots } from '../game/iceMissions';
 import { awardKey, missionsLeft } from '../game/rewards';
+import { closeEnough, followSpots } from '../game/follow';
 import { isUnlocked, WORLD_IDS, WORLDS, type WorldId } from '../game/worlds';
 import { isBoxBlock } from '../game/blocks';
 import type { NpcKind } from '../render/animals';
@@ -142,6 +143,9 @@ export class GameController {
   private worldStates: Partial<Record<WorldId, WorldState>>;
   private npcs = new Map<NpcKind, Animal>();
   private boat: Animal | null = null;
+  /** Za kým chodí Frený (naposledy vybrané / poslané dítě). */
+  private leader: CharacterId = 'ondra';
+  private followTimer: number | undefined;
 
   constructor() {
     this.storage = (() => {
@@ -224,6 +228,8 @@ export class GameController {
     this.view.onTap = (x, y) => this.handleTap(x, y);
     this.populateWorld();
     this.tickTimer = window.setInterval(this.tick, 1000);
+    window.clearInterval(this.followTimer);
+    this.followTimer = window.setInterval(this.followTick, 450);
     if (new URLSearchParams(location.search).has('test')) {
       (window as unknown as Record<string, unknown>).__onda = { controller: this, view: this.view, world: () => this.world };
     }
@@ -250,12 +256,60 @@ export class GameController {
       const saved = this.savedCharacters.find((c) => c.id === id)?.pos;
       this.characters.set(id, view.addAnimal(id, resolveCharacterPos(this.world, id, saved, def.spawn)));
     }
+    // Frený přijel s dětmi – postaví se hned vedle nich a pak za nimi chodí
+    const dog = this.animals.get('dog');
+    const lead = this.characters.get(this.leader);
+    if (dog && lead) {
+      dog.follower = true;
+      const spot = followSpots(this.world, lead.standCell, dog.standCell, this.occupiedCells())[0];
+      if (spot) dog.teleport(spot);
+    }
     this.boat = null;
     this.refreshBoat();
     this.refreshMissionVisuals();
     // Ve světě mají být vždy bedny/dárky – chybějící se doplní hned a potichu.
     while (countBoxes(this.world) < QUESTION_BOX_TARGET && this.spawnQuestionBox(false));
   }
+
+  /**
+   * Místa, kde stojí děti, postavy a loďka (tam se Frený nepostaví). Těsně vedle princezny,
+   * sněhuláka a loďky taky ne – jinak by je zakryl a ťuknutí by trefilo pejska.
+   */
+  private occupiedCells(): Vec3[] {
+    const out = [...this.characters.values()].map((a) => a.standCell);
+    const around = (p: Vec3) => {
+      // celý čtverec 3×3 kolem – i šikmo by pejsek z pohledu kamery postavu zakryl
+      for (let dx = -1; dx <= 1; dx++) for (let dz = -1; dz <= 1; dz++) out.push({ x: p.x + dx, y: p.y, z: p.z + dz });
+    };
+    for (const n of this.npcs.values()) around(n.standCell);
+    if (this.boat) {
+      around(this.boat.standCell);
+      out.push(WORLDS[this.worldId].boat.stand);
+    }
+    return out;
+  }
+
+  /** Frený chodí za dítětem, se kterým se zrovna hraje (ve všech světech). */
+  private followTick = (): void => {
+    const dog = this.animals.get('dog');
+    if (!dog || !this.view || !this.snapshot.started || this.snapshot.overlay) return;
+    if (dog.walking || dog.resting) return;
+    const lead = this.characters.get(this.snapshot.selectedCharacter ?? this.leader);
+    if (!lead) return;
+    const target = lead.standCell;
+    const occupied = this.occupiedCells();
+    const d = dog.standCell;
+    const inTheWay = occupied.some((o) => o.x === d.x && o.z === d.z);
+    if (closeEnough(target, d) && !inTheWay) return;
+    for (const spot of followSpots(this.world, target, d, occupied).slice(0, 5)) {
+      const r = findPath(this.world, dog.standCell, spot, dog.bodyHeight);
+      if (r.reached) {
+        // když děti běží, Frený přidá do kroku
+        dog.walk(r.path, undefined, lead.walking ? 3.2 : 2.6);
+        return;
+      }
+    }
+  };
 
   /** Kam se dá odsud plout (otevřené světy kromě tohoto). */
   private destinations(): WorldId[] {
@@ -279,6 +333,7 @@ export class GameController {
     this.saveNow();
     this.savedCharacters = this.characterStates();
     window.clearInterval(this.tickTimer);
+    window.clearInterval(this.followTimer);
     this.view?.dispose();
     this.view = null;
   }
@@ -901,6 +956,15 @@ export class GameController {
         }
       } else if (this.mission?.id === 'feed' && isFeedable(a.kind)) {
         this.feedAnimal(a, a.kind);
+      } else if (a.kind === 'dog' && sel) {
+        // vybrané dítě dojde k Frenému a pohladí ho („Frený, hudlánka!“)
+        const child = this.characters.get(sel);
+        if (child && areNeighbors(child.standCell, a.standCell)) {
+          if (!this.petDog(sel, child)) this.pokeAnimal(a);
+        } else {
+          a.rest(8); // Frený počká, než k němu dítě dojde
+          this.walkCharacter(sel, a.standCell, { x: 0, y: 1, z: 0 }, a.standCell);
+        }
       } else {
         this.pokeAnimal(a);
       }
@@ -1008,6 +1072,7 @@ export class GameController {
   selectCharacter(id: CharacterId | null, silent = false): void {
     this.markActivity();
     for (const [cid, a] of this.characters) a.setSelected(cid === id);
+    if (id) this.leader = id;
     this.set({ selectedCharacter: id });
     if (!id || silent) return;
     this.characters.get(id)?.poke();
@@ -1025,6 +1090,7 @@ export class GameController {
   private walkCharacter(id: CharacterId, pos: Vec3, normal: Vec3, box?: Vec3): void {
     const a = this.characters.get(id);
     if (!a || !this.view) return;
+    this.leader = id;
     const start = a.standCell;
     let result: PathResult | null = null;
     if (box) {

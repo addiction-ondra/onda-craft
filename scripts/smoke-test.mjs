@@ -613,6 +613,7 @@ async function iceFlow() {
   });
   ok(inv.gifts >= 1 && inv.questions === 0 && inv.snow > 100, `svět je zasněžený a místo beden jsou dárky (${inv.gifts})`);
   ok(inv.npcs.includes('princess') && inv.npcs.includes('snowman') && inv.npcs.includes('boat'), 'je tu princezna Vločka, sněhulák Bobek a lodička zpět');
+  ok(inv.npcs.includes('dog'), 'Frený přijel s dětmi i do Ledového království');
   await sleep(800);
   await page.screenshot({ path: `${OUT}/42-ice-world.png` });
 
@@ -683,11 +684,53 @@ async function iceFlow() {
   ok(await page.locator('.puzzle-done').isVisible(), 'puzzle složené posouváním dílků');
   await page.screenshot({ path: `${OUT}/48-puzzle-done.png` });
   await page.locator('.puzzle-done').getByRole('button').click();
+  const dogNear = async (who) =>
+    page
+      .waitForFunction(
+        (w) => {
+          const c = window.__onda.controller;
+          const d = window.__onda.view.animals.find((a) => a.kind === 'dog').standCell;
+          const k = c.characters.get(w).standCell;
+          return Math.abs(d.x - k.x) + Math.abs(d.z - k.z) <= 2;
+        },
+        who,
+        { timeout: 25000 },
+      )
+      .then(() => true)
+      .catch(() => false);
+  ok(await dogNear('ondra'), 'Frený doběhl za Ondrou až k princezně');
+  await page.evaluate(() => window.__onda.controller.selectCharacter('ondra', true));
+  const petBefore = await page.evaluate(() => window.__onda.controller.lastPetAt);
+  ok(await tapCreature(page, 'dog'), 'na Freného jde ťuknout');
+  const petted = await page
+    .waitForFunction((t) => window.__onda.controller.lastPetAt > t, petBefore, { timeout: 25000 })
+    .then(() => true)
+    .catch(() => false);
+  ok(petted, 'Ondra došel k Frenému a pohladil ho („Frený, hudlánka!“)');
+  await sleep(1500);
 
   // SNĚHULÁK BOBEK: dítě k němu dojde → prak, střílí se kostky na ledový hrad
   await page.getByRole('button', { name: 'Laura' }).click();
   ok(await tapCreature(page, 'snowman'), 'na sněhuláka Bobka jde ťuknout');
   await page.waitForFunction(() => window.__onda.controller.getSnapshot().overlay?.kind === 'sling', null, { timeout: 120000 }).catch(() => {});
+  if ((await snap(page)).overlay?.kind !== 'sling')
+    console.log(
+      '    debug:',
+      JSON.stringify(
+        await page.evaluate(() => {
+          const c = window.__onda.controller;
+          const v = window.__onda.view.animals;
+          return {
+            overlay: c.getSnapshot().overlay?.kind,
+            sel: c.getSnapshot().selectedCharacter,
+            laura: c.characters.get('lauriska').standCell,
+            ondra: c.characters.get('ondra').standCell,
+            dog: v.find((a) => a.kind === 'dog').standCell,
+            bobek: v.find((a) => a.kind === 'snowman').standCell,
+          };
+        }),
+      ),
+    );
   ok((await snap(page)).overlay?.kind === 'sling', 'Laura došla k Bobkovi a otevřel se prak');
   ok((await page.locator('.sling-level').count()) === 3, 'prak: na výběr jsou 3 hrady (malý, střední, velký)');
   await page.screenshot({ path: `${OUT}/48-sling-levels.png` });

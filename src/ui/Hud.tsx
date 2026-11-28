@@ -1,8 +1,8 @@
 import type { GameController, UiSnapshot } from '../controller/GameController';
-import { PALETTE } from '../game/blocks';
+import { PALETTES } from '../game/blocks';
 import { CHARACTER_IDS } from '../game/characters';
 import { TREASURE_LOCKS } from '../game/rewards';
-import { MISSIONS } from '../game/missions';
+import { missionsFor } from '../game/missions';
 import { CS } from '../i18n/cs';
 import { iconFor } from './blockIcons';
 import {
@@ -134,7 +134,7 @@ function TopBar({ game, ui }: Props) {
         <button className="big-btn missions-btn" aria-label="Úkoly" onClick={() => game.openMissions()}>
           <IconFlag />
           <span className="mini-stars">
-            {MISSIONS.map((d) => (
+            {missionsFor(ui.worldId).map((d) => (
               <span key={d.id} className={ui.completed.includes(d.id) ? 'on' : ''} />
             ))}
           </span>
@@ -202,7 +202,7 @@ export const TEMPLATE_EMOJI = { castle: '🏰', house: '🏠', farm: '🐄' } as
 function Palette({ game, ui }: Props) {
   return (
     <div className="palette" role="toolbar" aria-label="Materiály">
-      {PALETTE.map((t) => {
+      {PALETTES[ui.worldId].map((t) => {
         const selected = ui.mode === 'build' && ui.material === t;
         return (
           <button

@@ -218,6 +218,71 @@ const questionBox: Painter = (g, r) => {
   );
 };
 
+const iceBlock: Painter = (g, r) => {
+  noise('#a5d8ff', 0.05)(g, r);
+  g.fillStyle = 'rgba(255,255,255,0.75)';
+  for (const [x, y, w] of [
+    [2, 3, 5],
+    [9, 8, 4],
+    [4, 12, 3],
+  ])
+    g.fillRect(x, y, w, 1);
+  g.fillStyle = 'rgba(255,255,255,0.5)';
+  g.fillRect(3, 4, 1, 3);
+  g.fillStyle = '#74c0fc';
+  g.fillRect(0, 0, S, 1);
+  g.fillRect(0, S - 1, S, 1);
+  g.fillRect(0, 0, 1, S);
+  g.fillRect(S - 1, 0, 1, S);
+};
+
+const snowTop: Painter = (g, r) => {
+  noise('#f8f9fa', 0.05)(g, r);
+  g.fillStyle = '#dbe4ff';
+  for (let i = 0; i < 6; i++) g.fillRect(Math.floor(r() * 15), Math.floor(r() * 15), 2, 1);
+};
+
+/** Bok sněhu: bílý s jemně modrými stíny (ne hlína – sníh je i na stromech a věžích). */
+const snowSide: Painter = (g, r) => {
+  noise('#f1f3f5', 0.05)(g, r);
+  g.fillStyle = '#dbe4ff';
+  for (let i = 0; i < 5; i++) g.fillRect(Math.floor(r() * 14), 6 + Math.floor(r() * 9), 3, 1);
+  g.fillStyle = '#ced4da';
+  g.fillRect(0, S - 1, S, 1);
+};
+
+/** Dárek: růžová krabička se žlutou mašlí. */
+const giftBox: Painter = (g, r) => {
+  noise('#e64980', 0.05)(g, r);
+  g.fillStyle = '#ffd43b';
+  g.fillRect(7, 0, 2, S);
+  g.fillRect(0, 7, S, 2);
+  g.fillStyle = '#fab005';
+  g.fillRect(5, 5, 2, 2);
+  g.fillRect(9, 5, 2, 2);
+  g.fillStyle = '#a61e4d';
+  g.fillRect(0, 0, S, 1);
+  g.fillRect(0, S - 1, S, 1);
+  g.fillRect(0, 0, 1, S);
+  g.fillRect(S - 1, 0, 1, S);
+};
+
+const crystal: Painter = (g, r) => {
+  noise('#66d9e8', 0.08)(g, r);
+  g.fillStyle = '#e3fafc';
+  g.fillRect(7, 1, 2, 14);
+  g.fillRect(1, 7, 14, 2);
+  g.fillRect(3, 3, 2, 2);
+  g.fillRect(11, 3, 2, 2);
+  g.fillRect(3, 11, 2, 2);
+  g.fillRect(11, 11, 2, 2);
+  g.fillStyle = '#1098ad';
+  g.fillRect(0, 0, S, 1);
+  g.fillRect(0, S - 1, S, 1);
+  g.fillRect(0, 0, 1, S);
+  g.fillRect(S - 1, 0, 1, S);
+};
+
 interface FacePainters {
   top: Painter;
   side: Painter;
@@ -237,6 +302,10 @@ const PAINTERS: Record<BlockType, FacePainters> = {
   wall: { top: combine(wall, border('#c9b48a')), side: combine(wall, border('#c9b48a')), bottom: wall },
   roof: { top: combine(roof, border('#2f3a86')), side: combine(roof, border('#2f3a86')), bottom: roof },
   question: { top: questionBox, side: questionBox, bottom: questionBox },
+  ice: { top: iceBlock, side: iceBlock, bottom: iceBlock },
+  snow: { top: snowTop, side: snowSide, bottom: noise('#e9ecef', 0.05) },
+  gift: { top: giftBox, side: giftBox, bottom: giftBox },
+  crystal: { top: crystal, side: crystal, bottom: crystal },
 };
 
 export interface BlockCanvases {

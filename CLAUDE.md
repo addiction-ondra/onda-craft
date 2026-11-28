@@ -68,5 +68,8 @@ Před commitem vždy: `npm run lint && npm test && npm run build`.
 - Nová šablona Stavitele: `game/templates.ts` (max ~30 kostek, `entrance` musí vést na pevnou zem),
   název a hlas do `cs.ts` (`builder`), emoji do `ui/Overlays.tsx` a `ui/Hud.tsx`.
 - Nová úloha do beden s otazníkem: rozšířit `quiz.ts` (data), `cs.ts` (hlas) a `ui/QuizOverlay.tsx`.
+- Světy: definice v `game/worlds.ts` (`WorldDef`, `WORLD_IDS`, `UNLOCKED_BY`), mise mají `world`
+  (5 na svět). Formát uložení v4 ukládá každý svět zvlášť. Přechod mezi světy jen loďkou (postavy k ní dojdou).
+- Postavy v novém světě jen vlastní – žádná jména ani vzhled postav z filmů/her (Disney apod.).
 - Výkon: kostky jen přes `InstancedMesh`, žádné stíny, `pixelRatio ≤ 2`, render
   jen když je něco „dirty“ nebo běží animace.

@@ -1,4 +1,4 @@
-import { BLOCKS, type BlockType } from './blocks';
+import { BLOCKS, isBoxBlock, type BlockType } from './blocks';
 
 export const WORLD_W = 16; // osa x
 export const WORLD_D = 16; // osa z
@@ -169,20 +169,19 @@ const TOWER_H = 4;
 
 
 /** Věže jsou štíhlé (1×1) v rozích – široké věže by zakrývaly nádvoří. */
-const isTower = (x: number, z: number): boolean => {
-  const { x0, z0, x1, z1 } = CASTLE;
-  return (x === x0 || x === x1) && (z === z0 || z === z1);
-};
+const isTowerOf = (r: Rect, x: number, z: number): boolean => (x === r.x0 || x === r.x1) && (z === r.z0 || z === r.z1);
 
 /** Brána: východní zeď, dvě pole uprostřed, dvě kostky vysoká. */
-export const isCastleGate = (x: number, y: number, z: number): boolean =>
-  x === CASTLE.x1 && (z === CASTLE.z0 + 2 || z === CASTLE.z0 + 3) && y >= 1 && y <= 2;
+const isGateOf = (r: Rect, x: number, y: number, z: number): boolean =>
+  x === r.x1 && (z === r.z0 + 2 || z === r.z0 + 3) && y >= 1 && y <= 2;
+export const isCastleGate = (x: number, y: number, z: number): boolean => isGateOf(CASTLE, x, y, z);
 
-/** Nádvoří hradu (uvnitř zdí). */
-export const isInCastle = (p: Vec3): boolean =>
-  p.x > CASTLE.x0 && p.x < CASTLE.x1 && p.z > CASTLE.z0 && p.z < CASTLE.z1 && !isTower(p.x, p.z);
+/** Nádvoří hradu (uvnitř zdí) – pro libovolný hrad. */
+export const isInsideCastle = (r: Rect, p: Vec3): boolean =>
+  p.x > r.x0 && p.x < r.x1 && p.z > r.z0 && p.z < r.z1 && !isTowerOf(r, p.x, p.z);
+export const isInCastle = (p: Vec3): boolean => isInsideCastle(CASTLE, p);
 
-function addTree(w: World, x: number, z: number): void {
+export function addTree(w: World, x: number, z: number, snowy = false): void {
   for (let y = 1; y <= 3; y++) w.setRaw({ x, y, z }, 'log');
   for (let dx = -1; dx <= 1; dx++)
     for (let dz = -1; dz <= 1; dz++) {
@@ -193,7 +192,19 @@ function addTree(w: World, x: number, z: number): void {
         if (inBounds(p3) && !w.has(p3)) w.setRaw(p3, 'leaves');
       }
     }
-  w.setRaw({ x, y: 5, z }, 'leaves');
+  w.setRaw({ x, y: 5, z }, snowy ? 'snow' : 'leaves');
+  if (snowy) {
+    // zasněžená koruna
+    for (const [dx, dz] of [
+      [1, 0],
+      [-1, 0],
+      [0, 1],
+      [0, -1],
+    ]) {
+      const p = { x: x + dx, y: 4, z: z + dz };
+      if (inBounds(p)) w.setRaw(p, 'snow');
+    }
+  }
 }
 
 /** Odstraní strom (kmen + korunu) – jen přírodní kostky, stavby dítěte nechá být. */
@@ -228,22 +239,32 @@ function addHouse(w: World, onlyEmpty = false): void {
   put({ x: x0 + 1, y: 4, z: z0 + 1 }, 'stone'); // komín
 }
 
-/** Hrad z kamene: hradby s cimbuřím, 4 věže se střechou, brána a volné nádvoří. */
-function addCastle(w: World): void {
-  const { x0, z0, x1, z1 } = CASTLE;
+export interface CastleMaterials {
+  wall: BlockType;
+  roof: BlockType;
+  ground: BlockType;
+}
+
+/** Hrad: hradby s cimbuřím, 4 věže se střechou, brána na východ a volné nádvoří. */
+export function addCastle(
+  w: World,
+  rect: Readonly<Rect> = CASTLE,
+  mats: CastleMaterials = { wall: 'stone', roof: 'roof', ground: 'grass' },
+): void {
+  const { x0, z0, x1, z1 } = rect;
   for (let x = x0; x <= x1; x++)
     for (let z = z0; z <= z1; z++) {
       // vyčistit prostor (i v původním světě)
       for (let y = 1; y < WORLD_H; y++) w.deleteRaw({ x, y, z });
-      w.setRaw({ x, y: 0, z }, 'grass');
+      w.setRaw({ x, y: 0, z }, mats.ground);
       const edge = x === x0 || x === x1 || z === z0 || z === z1;
-      if (isTower(x, z)) {
-        for (let y = 1; y <= TOWER_H; y++) w.setRaw({ x, y, z }, 'stone');
-        w.setRaw({ x, y: TOWER_H + 1, z }, 'roof');
+      if (isTowerOf(rect, x, z)) {
+        for (let y = 1; y <= TOWER_H; y++) w.setRaw({ x, y, z }, mats.wall);
+        w.setRaw({ x, y: TOWER_H + 1, z }, mats.roof);
       } else if (edge) {
-        for (let y = 1; y <= CASTLE_WALL_H; y++) if (!isCastleGate(x, y, z)) w.setRaw({ x, y, z }, 'stone');
+        for (let y = 1; y <= CASTLE_WALL_H; y++) if (!isGateOf(rect, x, y, z)) w.setRaw({ x, y, z }, mats.wall);
         // cimbuří (zuby na hradbách)
-        if ((x + z) % 2 === 0) w.setRaw({ x, y: CASTLE_WALL_H + 1, z }, 'stone');
+        if ((x + z) % 2 === 0) w.setRaw({ x, y: CASTLE_WALL_H + 1, z }, mats.wall);
       }
     }
   // volný prostor před bránou, aby se dalo dojít dovnitř
@@ -338,17 +359,20 @@ export const QUESTION_SPOTS: Vec3[] = [
  * Když jsou všechny bedny otevřené, při dalším spuštění se objeví nové
  * (jen na volných místech). Vrací počet nově přidaných.
  */
-export function refillQuestionBoxes(w: World): number {
-  if (w.count('question') > 0) return 0;
+export function refillQuestionBoxes(w: World, spots: Vec3[] = QUESTION_SPOTS, block: BlockType = 'question'): number {
+  if (countBoxes(w) > 0) return 0;
   let n = 0;
-  for (const p of QUESTION_SPOTS) {
+  for (const p of spots) {
     const below = w.get({ x: p.x, y: p.y - 1, z: p.z });
     if (w.has(p) || below === undefined || below === 'water') continue;
-    w.setRaw(p, 'question');
+    w.setRaw(p, block);
     n++;
   }
   return n;
 }
+
+/** Kolik je ve světě beden s otazníkem / dárků. */
+export const countBoxes = (w: World): number => w.count('question') + w.count('gift');
 
 /** Stojí postavička u bedny (vedle ní nebo na ní)? Vrací pozici bedny. */
 export function adjacentQuestionBox(w: World, p: Vec3): Vec3 | null {
@@ -360,7 +384,7 @@ export function adjacentQuestionBox(w: World, p: Vec3): Vec3 | null {
     [0, -1, 0],
   ]) {
     const q = { x: p.x + dx, y: p.y + dy, z: p.z + dz };
-    if (w.get(q) === 'question') return q;
+    if (isBoxBlock(w.get(q))) return q;
   }
   return null;
 }
@@ -411,7 +435,7 @@ const SPOT_RULES: SpotRules[] = [
 
 function spotCandidates(w: World, o: BoxSpotOptions, r: SpotRules): Vec3[] {
   const boxes: Vec3[] = [];
-  for (const [k, t] of w.entries()) if (t === 'question') boxes.push(parseKey(k));
+  for (const [k, t] of w.entries()) if (isBoxBlock(t)) boxes.push(parseKey(k));
   const near = (a: Vec3, b: Vec3, d: number) => Math.abs(a.x - b.x) + Math.abs(a.z - b.z) <= d;
   const doghouse = [DOGHOUSE.inside, DOGHOUSE.door, ...doghouseParts()];
   const cells: Vec3[] = [];

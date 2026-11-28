@@ -89,7 +89,7 @@ const optionLabel = (quiz: Quiz, o: string): string => {
   }
 };
 
-export function QuizOverlay({ game, quiz, wrong, solved, help }: Props) {
+export function QuizOverlay({ game, quiz, wrong, solved, help, boxBlock = 'question' }: Props & { boxBlock?: BlockType }) {
   return (
     <div className="overlay dim">
       <div className={`card quiz-card ${solved ? 'solved' : ''}`}>
@@ -97,7 +97,7 @@ export function QuizOverlay({ game, quiz, wrong, solved, help }: Props) {
           <IconClose />
         </button>
         <div className="quiz-head">
-          <img className="quiz-box" src={iconFor('question')} alt="" />
+          <img className="quiz-box" src={iconFor(boxBlock)} alt="" />
           <button className="round-btn" aria-label="Zopakovat úkol" onClick={() => game.repeatQuiz()}>
             <IconSpeaker />
           </button>

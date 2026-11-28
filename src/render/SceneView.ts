@@ -147,6 +147,55 @@ export class SceneView {
 
 
   /** Přidá zvířátko nebo postavičku na dané místo. */
+  /** Odstraní všechna zvířátka, postavy i loďku (přechod do jiného světa). */
+  clearCreatures(): void {
+    for (const a of this.animals) this.scene.remove(a.group);
+    this.animals.length = 0;
+  }
+
+  /** Odstraní jednoho tvora (např. loďku). */
+  removeCreature(a: Animal): void {
+    this.scene.remove(a.group);
+    const i = this.animals.indexOf(a);
+    if (i >= 0) this.animals.splice(i, 1);
+  }
+
+  private snow: THREE.Points | null = null;
+
+  /** Vzhled světa: letní obloha, nebo zimní obloha se sněžením. */
+  setTheme(theme: 'summer' | 'winter'): void {
+    this.scene.background = new THREE.Color(theme === 'winter' ? '#b9d7ee' : '#8fd3f5');
+    if (this.snow) {
+      this.scene.remove(this.snow);
+      this.snow = null;
+    }
+    if (theme === 'winter') {
+      const n = 400;
+      const pos = new Float32Array(n * 3);
+      for (let i = 0; i < n; i++) {
+        pos[i * 3] = Math.random() * 24 - 4;
+        pos[i * 3 + 1] = Math.random() * 14;
+        pos[i * 3 + 2] = Math.random() * 24 - 4;
+      }
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+      this.snow = new THREE.Points(geo, new THREE.PointsMaterial({ color: '#ffffff', size: 0.12, transparent: true, opacity: 0.9, depthWrite: false }));
+      this.scene.add(this.snow);
+    }
+  }
+
+  private updateSnow(dt: number): void {
+    if (!this.snow) return;
+    const a = this.snow.geometry.getAttribute('position') as THREE.BufferAttribute;
+    for (let i = 0; i < a.count; i++) {
+      let y = a.getY(i) - dt * (0.6 + (i % 5) * 0.1);
+      if (y < 0) y = 14;
+      a.setY(i, y);
+      a.setX(i, a.getX(i) + Math.sin((y + i) * 0.7) * dt * 0.2);
+    }
+    a.needsUpdate = true;
+  }
+
   addAnimal(kind: CreatureKind, start: Vec3): Animal {
     const a = new Animal(kind, start, this.world);
     this.animals.push(a);
@@ -376,6 +425,7 @@ export class SceneView {
     this.updateCamera(dt);
     for (const a of this.animals) a.update(dt, this.world, this.blockedForAnimals);
     this.effects.update(dt);
+    this.updateSnow(dt);
     for (const t of this.waterTex) t.offset.x = (t.offset.x + dt * 0.03) % 1;
     this.renderer.render(this.scene, this.camera);
   };

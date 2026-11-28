@@ -21,9 +21,14 @@ export const isCharacterId = (v: unknown): v is CharacterId =>
   typeof v === 'string' && (CHARACTER_IDS as readonly string[]).includes(v);
 
 /** Platná pozice z uložení, jinak výchozí (a když ani ta nejde, první volné místo). */
-export function resolveCharacterPos(w: World, id: CharacterId, saved?: Vec3 | null): Vec3 {
+export function resolveCharacterPos(
+  w: World,
+  id: CharacterId,
+  saved?: Vec3 | null,
+  spawns: Record<CharacterId, Vec3> = CHARACTER_SPAWN,
+): Vec3 {
   if (saved && isStandable(w, saved)) return saved;
-  const spawn = CHARACTER_SPAWN[id];
+  const spawn = spawns[id];
   if (isStandable(w, spawn)) return spawn;
   for (let y = 1; y < 6; y++)
     for (let x = 15; x >= 0; x--)

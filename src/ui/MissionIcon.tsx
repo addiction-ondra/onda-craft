@@ -36,6 +36,44 @@ export function MissionIcon({ id }: { id: MissionId }) {
         <span className="badge-emoji">🐶</span>
       </span>
     );
+  if (id === 'snowman')
+    return (
+      <span className="mission-icon">
+        <img src={iconFor('snow')} alt="" />
+        <span className="badge-emoji">⛄</span>
+      </span>
+    );
+  if (id === 'tower5')
+    return (
+      <span className="mission-icon">
+        <img src={iconFor('ice')} alt="" />
+        <b className="badge-num">5</b>
+      </span>
+    );
+  if (id === 'pattern')
+    return (
+      <span className="mission-icon pattern-icon">
+        <img src={iconFor('ice')} alt="" />
+        <img src={iconFor('wood')} alt="" />
+        <span className="badge-emoji">❓</span>
+      </span>
+    );
+  if (id === 'crystals')
+    return (
+      <span className="mission-icon">
+        <img src={iconFor('crystal')} alt="" />
+        <span className="badge-search">
+          <IconSearch />
+        </span>
+      </span>
+    );
+  if (id === 'numbers')
+    return (
+      <span className="mission-icon">
+        <img src={iconFor('snow')} alt="" />
+        <b className="badge-num">123</b>
+      </span>
+    );
   return (
     <span className="mission-icon">
       <IconBridge />
@@ -43,7 +81,18 @@ export function MissionIcon({ id }: { id: MissionId }) {
   );
 }
 
-const slotBlock = { wood5: 'wood', findRed: 'red', bridge: 'wood', doghouse: 'wood', feed: 'grass' } as const;
+const slotBlock = {
+  wood5: 'wood',
+  findRed: 'red',
+  bridge: 'wood',
+  doghouse: 'wood',
+  feed: 'grass',
+  snowman: 'snow',
+  tower5: 'ice',
+  pattern: 'wood',
+  crystals: 'crystal',
+  numbers: 'snow',
+} as const;
 
 /** Políčka průběhu – plní se kostičkami (u krmení zvířátky), žádná čísla ani časomíra. */
 export function ProgressSlots({ id, progress, target, fed }: { id: MissionId; progress: number; target: number; fed?: string[] }) {
@@ -63,7 +112,7 @@ export function ProgressSlots({ id, progress, target, fed }: { id: MissionId; pr
         }
         return (
           <span key={i} className={`slot ${filled ? 'filled' : ''}`}>
-            {filled ? <img src={iconFor(slotBlock[id])} alt="" /> : id === 'wood5' ? <small>{i + 1}</small> : null}
+            {filled ? <img src={iconFor(slotBlock[id])} alt="" /> : id === 'wood5' || id === 'tower5' || id === 'numbers' ? <small>{i + 1}</small> : null}
           </span>
         );
       })}

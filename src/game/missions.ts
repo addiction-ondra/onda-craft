@@ -1,7 +1,21 @@
 import type { BlockType } from './blocks';
 import { bridgeProgress, doghouseStatus, hasBridge, keyOf, WORLD_H, type Vec3, type World } from './world';
+import { ICE_PLANS, type WorldId } from './worlds';
+import { patternToFill, placeNumberBalls, placePatternStart, rowStatus, snowmanSlots, stackStatus, towerSlots } from './iceMissions';
 
-export type MissionId = 'wood5' | 'findRed' | 'bridge' | 'feed' | 'doghouse';
+export type MissionId =
+  // Ostrov s hradem
+  | 'wood5'
+  | 'findRed'
+  | 'bridge'
+  | 'feed'
+  | 'doghouse'
+  // Ledové království
+  | 'snowman'
+  | 'tower5'
+  | 'pattern'
+  | 'crystals'
+  | 'numbers';
 
 /** Zvířátka a jídlo, které mají ráda (mise 4). Barva kostky = jídlo. */
 export type FeedableAnimal = 'sheep' | 'chick' | 'dog';
@@ -30,7 +44,9 @@ export type GameEvent =
   | { kind: 'placed'; block: BlockType; pos: Vec3 }
   | { kind: 'removed'; block: BlockType; pos: Vec3 }
   | { kind: 'collected'; pos: Vec3 }
-  | { kind: 'fed'; animal: FeedableAnimal; food: BlockType };
+  | { kind: 'fed'; animal: FeedableAnimal; food: BlockType }
+  /** Ťuknutí na sněhovou kouli s číslem (mise „Čísla 1–5“). */
+  | { kind: 'numberTap'; pos: Vec3 };
 
 /**
  * Zpětná vazba pro controller:
@@ -47,6 +63,8 @@ export interface MissionResult {
 
 export interface MissionDef {
   id: MissionId;
+  /** Ve kterém světě mise je. */
+  world: WorldId;
   /** Číslo mise v plánu (1–8). */
   number: number;
   target: number;
@@ -55,12 +73,20 @@ export interface MissionDef {
 }
 
 export const MISSIONS: MissionDef[] = [
-  { id: 'wood5', number: 1, target: 5, suggestedBlock: 'wood' },
-  { id: 'findRed', number: 2, target: 3 },
-  { id: 'bridge', number: 3, target: 2, suggestedBlock: 'wood' },
-  { id: 'feed', number: 4, target: 3 },
-  { id: 'doghouse', number: 5, target: 4, suggestedBlock: 'wood' },
+  { id: 'wood5', world: 'island', number: 1, target: 5, suggestedBlock: 'wood' },
+  { id: 'findRed', world: 'island', number: 2, target: 3 },
+  { id: 'bridge', world: 'island', number: 3, target: 2, suggestedBlock: 'wood' },
+  { id: 'feed', world: 'island', number: 4, target: 3 },
+  { id: 'doghouse', world: 'island', number: 5, target: 4, suggestedBlock: 'wood' },
+  { id: 'snowman', world: 'ice', number: 1, target: 3, suggestedBlock: 'snow' },
+  { id: 'tower5', world: 'ice', number: 2, target: 5 },
+  { id: 'pattern', world: 'ice', number: 3, target: 3 },
+  { id: 'crystals', world: 'ice', number: 4, target: 3 },
+  { id: 'numbers', world: 'ice', number: 5, target: 5 },
 ];
+
+/** Mise jednoho světa (v pořadí). */
+export const missionsFor = (world: WorldId): MissionDef[] => MISSIONS.filter((m) => m.world === world);
 
 export const getMission = (id: MissionId): MissionDef => {
   const m = MISSIONS.find((d) => d.id === id);
@@ -97,17 +123,27 @@ export function startMission(id: MissionId, world: World, rng: () => number = Ma
   const def = getMission(id);
   const state: MissionState = { id, progress: 0, target: def.target, targets: [], otherTries: 0, done: false };
 
-  if (id === 'findRed') {
-    for (const [x, z] of shuffle(RED_HIDING_SPOTS, rng)) {
+  if (id === 'findRed' || id === 'crystals') {
+    const spots = id === 'findRed' ? RED_HIDING_SPOTS : ICE_PLANS.crystalSpots;
+    const block: BlockType = id === 'findRed' ? 'red' : 'crystal';
+    for (const [x, z] of shuffle(spots, rng)) {
       if (state.targets.length >= def.target) break;
       const y = world.topY(x, z);
       if (y < 1 || y >= WORLD_H) continue;
       const p = { x, y, z };
-      world.setRaw(p, 'red');
+      world.setRaw(p, block);
       state.targets.push(p);
     }
     state.target = state.targets.length;
   }
+
+  if (id === 'snowman') state.progress = Math.min(stackStatus(world, snowmanSlots()).filled, def.target - 1);
+  if (id === 'tower5') state.progress = Math.min(stackStatus(world, towerSlots()).filled, def.target - 1);
+  if (id === 'pattern') {
+    placePatternStart(world);
+    state.progress = Math.min(rowStatus(world, patternToFill()).filled, def.target - 1);
+  }
+  if (id === 'numbers') state.targets = placeNumberBalls(world, rng);
 
   if (id === 'bridge') {
     state.progress = Math.min(bridgeProgress(world).covered, def.target - 1);
@@ -125,13 +161,24 @@ export function startMission(id: MissionId, world: World, rng: () => number = Ma
 
 /** Po načtení uložené hry: vrátí do světa chybějící cílové kostky. */
 export function restoreMission(state: MissionState, world: World): void {
-  if (state.id === 'findRed') {
-    for (const p of state.targets) if (!world.has(p)) world.setRaw(p, 'red');
+  if (state.id === 'findRed' || state.id === 'crystals') {
+    for (const p of state.targets) if (!world.has(p)) world.setRaw(p, state.id === 'findRed' ? 'red' : 'crystal');
   }
+  if (state.id === 'numbers') {
+    for (const p of state.targets) if (!world.has(p)) world.setRaw(p, 'snow');
+  }
+  if (state.id === 'pattern') placePatternStart(world);
 }
 
+/** Číslo sněhové koule na místě (1–5), nebo null. */
+export const numberAt = (state: MissionState | null, pos: Vec3): number | null => {
+  if (!state || state.id !== 'numbers' || state.done) return null;
+  const i = state.targets.findIndex((t) => keyOf(t) === keyOf(pos));
+  return i < 0 ? null : i + 1;
+};
+
 export const isMissionTarget = (state: MissionState | null, pos: Vec3): boolean =>
-  !!state && !state.done && state.targets.some((t) => keyOf(t) === keyOf(pos));
+  !!state && !state.done && (state.id === 'findRed' || state.id === 'crystals') && state.targets.some((t) => keyOf(t) === keyOf(pos));
 
 /** Čistý reducer misí. */
 export function reduceMission(state: MissionState, event: GameEvent, world: World): MissionResult {
@@ -148,7 +195,8 @@ export function reduceMission(state: MissionState, event: GameEvent, world: Worl
       return { state: { ...state, progress, done }, feedback: done ? 'complete' : 'progress' };
     }
 
-    case 'findRed': {
+    case 'findRed':
+    case 'crystals': {
       if (event.kind !== 'collected') return { state, feedback: 'none' };
       const k = keyOf(event.pos);
       if (!state.targets.some((t) => keyOf(t) === k)) return { state, feedback: 'none' };
@@ -192,6 +240,36 @@ export function reduceMission(state: MissionState, event: GameEvent, world: Worl
       }
       const progress = Math.max(state.progress, Math.min(st.filled, state.target - 1));
       return { state: { ...state, progress }, feedback: progress > state.progress ? 'progress' : 'none' };
+    }
+
+    case 'snowman':
+    case 'tower5':
+    case 'pattern': {
+      if (event.kind !== 'placed' && event.kind !== 'removed') return { state, feedback: 'none' };
+      const st =
+        state.id === 'pattern'
+          ? rowStatus(world, patternToFill())
+          : stackStatus(world, state.id === 'snowman' ? snowmanSlots() : towerSlots());
+      if (st.done) return { state: { ...state, progress: state.target, done: true }, feedback: 'complete' };
+      // Špatný materiál na svítícím místě = jemná rada (controller kostku vrátí).
+      if (event.kind === 'placed' && st.wrong.some((w) => keyOf(w.pos) === keyOf(event.pos))) {
+        return { state: { ...state, otherTries: state.otherTries + 1 }, feedback: 'gentle-hint' };
+      }
+      const progress = Math.max(state.progress, st.filled);
+      return { state: { ...state, progress }, feedback: progress > state.progress ? 'progress' : 'none' };
+    }
+
+    case 'numbers': {
+      if (event.kind !== 'numberTap') return { state, feedback: 'none' };
+      const n = numberAt(state, event.pos);
+      if (n === null) return { state, feedback: 'none' };
+      if (n !== state.progress + 1) {
+        // jiné číslo – nic se nebere, jen rada, které číslo teď hledáme
+        return { state: { ...state, otherTries: state.otherTries + 1 }, feedback: n <= state.progress ? 'none' : 'gentle-hint' };
+      }
+      const progress = state.progress + 1;
+      const done = progress >= state.target;
+      return { state: { ...state, progress, done }, feedback: done ? 'complete' : 'progress' };
     }
   }
 }

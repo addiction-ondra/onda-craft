@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import type { GameController, UiSnapshot } from '../controller/GameController';
-import { MISSIONS, type MissionId } from '../game/missions';
+import { missionsFor, type MissionId } from '../game/missions';
 import { TEMPLATE_IDS, type TemplateId } from '../game/templates';
 import { CS } from '../i18n/cs';
 import { iconFor } from './blockIcons';
@@ -48,7 +48,7 @@ export function MissionMenu({ game, ui }: Props) {
               <IconBuild />
             </span>
           </button>
-          {MISSIONS.map((m) => (
+          {missionsFor(ui.worldId).map((m) => (
             <button key={m.id} className="menu-item" aria-label={CS.missions[m.id].title} onClick={() => game.chooseMission(m.id)}>
               <span className="menu-pic">
                 <MissionIcon id={m.id} />
@@ -103,7 +103,7 @@ export function Success({ game, ui, id, keyAwarded }: Props & { id: MissionId; k
       })),
     [],
   );
-  const next = MISSIONS.find((m) => m.id !== id && !ui.completed.includes(m.id));
+  const next = missionsFor(ui.worldId).find((m) => m.id !== id && !ui.completed.includes(m.id));
   return (
     <div className="overlay dim success">
       <div className="confetti" aria-hidden>

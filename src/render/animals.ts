@@ -6,7 +6,7 @@ import type { BlockType } from '../game/blocks';
 import { blockCanvases } from './textures';
 
 /** Bublina nad zvířátkem: obrázek jídla, které chce, nebo srdíčko po nakrmení. */
-export type Bubble = { food: BlockType } | 'heart' | 'talk' | 'dog' | null;
+export type Bubble = { food: BlockType } | 'heart' | 'talk' | 'dog' | 'alert' | 'map' | null;
 
 const bubbleCache = new Map<string, THREE.SpriteMaterial>();
 function bubbleMaterial(b: Exclude<Bubble, null>): THREE.SpriteMaterial {
@@ -61,6 +61,47 @@ function bubbleMaterial(b: Exclude<Bubble, null>): THREE.SpriteMaterial {
     g.beginPath();
     g.ellipse(64, 64, 5, 3.5, 0, 0, Math.PI * 2);
     g.fill();
+  } else if (b === 'alert') {
+    // „potřebuji pomoc“: dva červené vykřičníky
+    g.fillStyle = '#e03131';
+    for (const x of [52, 76]) {
+      g.fillRect(x - 5, 26, 10, 30);
+      g.beginPath();
+      g.arc(x, 70, 6, 0, Math.PI * 2);
+      g.fill();
+    }
+  } else if (b === 'map') {
+    // malá mapa s tečkovanou cestou
+    g.fillStyle = '#fff3bf';
+    g.strokeStyle = '#8a5a2b';
+    g.lineWidth = 4;
+    g.beginPath();
+    g.moveTo(30, 36);
+    g.lineTo(52, 28);
+    g.lineTo(76, 36);
+    g.lineTo(98, 28);
+    g.lineTo(98, 78);
+    g.lineTo(76, 86);
+    g.lineTo(52, 78);
+    g.lineTo(30, 86);
+    g.closePath();
+    g.fill();
+    g.stroke();
+    g.setLineDash([5, 5]);
+    g.strokeStyle = '#e8590c';
+    g.beginPath();
+    g.moveTo(38, 74);
+    g.quadraticCurveTo(60, 40, 86, 48);
+    g.stroke();
+    g.setLineDash([]);
+    g.strokeStyle = '#c92a2a';
+    g.lineWidth = 5;
+    g.beginPath();
+    g.moveTo(82, 42);
+    g.lineTo(92, 52);
+    g.moveTo(92, 42);
+    g.lineTo(82, 52);
+    g.stroke();
   } else if (b === 'talk') {
     // „mluví“: tři tečky
     g.fillStyle = '#495057';
@@ -91,7 +132,9 @@ function bubbleMaterial(b: Exclude<Bubble, null>): THREE.SpriteMaterial {
 }
 
 export type AnimalKind = 'dog' | 'sheep' | 'chick';
-export type CreatureKind = AnimalKind | CharacterId;
+export type NpcKind = 'princess' | 'snowman' | 'boat';
+export type CreatureKind = AnimalKind | CharacterId | NpcKind;
+export const isNpcKind = (k: CreatureKind): k is NpcKind => k === 'princess' || k === 'snowman' || k === 'boat';
 
 export const isCharacterKind = (k: CreatureKind): k is CharacterId => k === 'ondra' || k === 'lauriska';
 
@@ -125,6 +168,10 @@ interface Model {
   legs: THREE.Group[];
   arms: THREE.Group[];
   height: number;
+  /** Mávající ruka (princezna). */
+  wave?: THREE.Group;
+  /** Části, které se rozpadají a skládají (sněhulák): [střed, hlava]. */
+  parts?: THREE.Group[];
 }
 
 const EYE = '#1b1b1b';
@@ -259,6 +306,94 @@ function buildLaura(): Model {
   return { root: g, legs, arms, height: 1.26 };
 }
 
+/** Princezna Vločka – vlastní postava: modré šaty, zlatá korunka, hnědé vlasy v drdolu. */
+function buildPrincess(): Model {
+  const g = new THREE.Group();
+  const dress = '#4dabf7';
+  const light = '#a5d8ff';
+  const legs = [limb(0.11, 0.2, 0.12, SKIN, -0.07, 0.22, 0, '#74c0fc'), limb(0.11, 0.2, 0.12, SKIN, 0.07, 0.22, 0, '#74c0fc')];
+  legs.forEach((l) => g.add(l));
+  g.add(box(0.6, 0.2, 0.42, dress, 0, 0.2, 0)); // široká sukně
+  g.add(box(0.5, 0.2, 0.36, dress, 0, 0.4, 0));
+  g.add(box(0.4, 0.18, 0.3, light, 0, 0.58, 0));
+  g.add(box(0.36, 0.26, 0.22, dress, 0, 0.78, 0)); // živůtek
+  for (const [x, y] of [
+    [-0.18, 0.3],
+    [0.2, 0.46],
+    [-0.12, 0.62],
+  ])
+    g.add(box(0.05, 0.05, 0.02, '#ffffff', x, y, 0.22)); // vločky na šatech
+  const armL = limb(0.1, 0.32, 0.11, light, -0.24, 0.88, 0);
+  armL.rotation.z = 0.2;
+  g.add(armL);
+  const armR = limb(0.1, 0.32, 0.11, light, 0.24, 0.88, 0);
+  armR.add(box(0.1, 0.1, 0.11, SKIN, 0, -0.3, 0));
+  g.add(armR);
+  g.add(box(0.36, 0.34, 0.32, SKIN, 0, 1.08, 0));
+  g.add(box(0.06, 0.07, 0.02, EYE, -0.08, 1.11, 0.16));
+  g.add(box(0.06, 0.07, 0.02, EYE, 0.08, 1.11, 0.16));
+  g.add(box(0.1, 0.03, 0.02, '#e64980', 0, 1.0, 0.16));
+  const hair = '#8d5524';
+  g.add(box(0.4, 0.1, 0.36, hair, 0, 1.28, 0));
+  g.add(box(0.4, 0.3, 0.06, hair, 0, 1.12, -0.17));
+  g.add(box(0.2, 0.2, 0.18, hair, 0, 1.36, -0.1)); // drdol
+  // zlatá korunka
+  g.add(box(0.34, 0.06, 0.3, '#ffd43b', 0, 1.36, 0.02));
+  for (const x of [-0.12, 0, 0.12]) g.add(box(0.06, 0.1, 0.06, '#fab005', x, 1.43, 0.12));
+  g.add(box(0.05, 0.05, 0.03, '#4dabf7', 0, 1.42, 0.16));
+  return { root: g, legs: [], arms: [], height: 1.48, wave: armR };
+}
+
+/** Sněhulák Bobek – vlastní postava: černý klobouček, červená šála, mrkvový nos. */
+function buildSnowman(): Model {
+  const g = new THREE.Group();
+  const snow = '#f8f9fa';
+  g.add(box(0.62, 0.5, 0.62, snow, 0, 0.25, 0)); // spodní koule
+  const mid = new THREE.Group();
+  mid.position.y = 0.5;
+  mid.add(box(0.46, 0.4, 0.46, snow, 0, 0.2, 0));
+  mid.add(box(0.06, 0.06, 0.02, EYE, 0, 0.3, 0.24)); // knoflíky
+  mid.add(box(0.06, 0.06, 0.02, EYE, 0, 0.14, 0.24));
+  for (const s of [-1, 1]) {
+    const arm = box(0.4, 0.05, 0.05, '#6b3f1d', s * 0.4, 0.26, 0); // ruce z větviček
+    arm.rotation.z = s * 0.4;
+    mid.add(arm);
+  }
+  mid.add(box(0.5, 0.08, 0.5, '#e03131', 0, 0.4, 0)); // šála
+  g.add(mid);
+  const head = new THREE.Group();
+  head.position.y = 0.94;
+  head.add(box(0.36, 0.34, 0.36, snow, 0, 0.17, 0));
+  head.add(box(0.05, 0.05, 0.02, EYE, -0.08, 0.22, 0.19));
+  head.add(box(0.05, 0.05, 0.02, EYE, 0.08, 0.22, 0.19));
+  const nose = box(0.06, 0.06, 0.2, '#ff922b', 0, 0.15, 0.27);
+  head.add(nose);
+  head.add(box(0.12, 0.03, 0.02, '#495057', 0, 0.07, 0.19)); // úsměv
+  head.add(box(0.4, 0.04, 0.4, '#212529', 0, 0.36, 0)); // klobouček
+  head.add(box(0.26, 0.2, 0.26, '#212529', 0, 0.48, 0));
+  g.add(head);
+  return { root: g, legs: [], arms: [], height: 1.5, parts: [mid, head] };
+}
+
+/** Loďka s plachtou – na ní se pluje do dalšího světa. */
+function buildBoat(): Model {
+  const g = new THREE.Group();
+  const wood = '#a0522d';
+  g.add(box(1.4, 0.24, 0.7, wood, 0, 0.12, 0));
+  g.add(box(1.6, 0.12, 0.8, '#8b4513', 0, 0.3, 0));
+  g.add(box(0.2, 0.2, 0.6, wood, 0.75, 0.38, 0)); // příď
+  g.add(box(0.06, 1.2, 0.06, '#6b3f1d', 0, 0.9, 0)); // stěžeň
+  const sail = new THREE.Mesh(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0.05, 1.45, 0), new THREE.Vector3(0.05, 0.5, 0), new THREE.Vector3(0.7, 0.55, 0)]), mat('#fff9db'));
+  (sail.material as THREE.Material).side = THREE.DoubleSide;
+  sail.geometry.computeVertexNormals();
+  g.add(sail);
+  g.add(box(0.3, 0.16, 0.02, '#e03131', 0.18, 1.5, 0)); // vlaječka
+  g.rotation.y = Math.PI / 2;
+  const root = new THREE.Group();
+  root.add(g);
+  return { root, legs: [], arms: [], height: 1.4 };
+}
+
 function buildModel(kind: CreatureKind): Model {
   switch (kind) {
     case 'dog':
@@ -271,6 +406,12 @@ function buildModel(kind: CreatureKind): Model {
       return buildOndra();
     case 'lauriska':
       return buildLaura();
+    case 'princess':
+      return buildPrincess();
+    case 'snowman':
+      return buildSnowman();
+    case 'boat':
+      return buildBoat();
   }
 }
 
@@ -278,6 +419,8 @@ function buildModel(kind: CreatureKind): Model {
 export class Animal {
   readonly group = new THREE.Group();
   readonly isCharacter: boolean;
+  /** Stojí na místě (princezna, sněhulák, loďka) – netoulá se. */
+  readonly isStatic: boolean;
   private model: Model;
   private cell: Vec3;
   private from = new THREE.Vector3();
@@ -305,6 +448,7 @@ export class Animal {
     world: World,
   ) {
     this.isCharacter = isCharacterKind(kind);
+    this.isStatic = isNpcKind(kind);
     this.bodyHeight = this.isCharacter ? 2 : 1;
     const lvl = this.isCharacter ? start.y : (world.standLevel(start.x, start.z, start.y) ?? 1);
     this.cell = { x: start.x, y: lvl, z: start.z };
@@ -325,7 +469,8 @@ export class Animal {
     this.group.add(shadow);
 
     // neviditelná „klikací“ krabička – malé postavičky se trefují snáz
-    const hit = new THREE.Mesh(new THREE.BoxGeometry(0.8, this.model.height, 0.8), new THREE.MeshBasicMaterial({ visible: false }));
+    const hitW = kind === 'boat' ? 1.7 : 0.8;
+    const hit = new THREE.Mesh(new THREE.BoxGeometry(hitW, this.model.height, hitW), new THREE.MeshBasicMaterial({ visible: false }));
     hit.position.y = this.model.height / 2;
     this.model.root.add(hit);
     this.model.root.traverse((o) => (o.userData.animal = this));
@@ -429,7 +574,7 @@ export class Animal {
     this.time += dt;
 
     // Někdo postavil kostku přímo na postavičku/zvířátko → vyleze nahoru.
-    if (this.t >= 1) {
+    if (this.t >= 1 && this.kind !== 'boat') {
       let y = this.cell.y;
       if (this.isCharacter) {
         while (y < WORLD_H - 2 && !isStandable(world, { ...this.cell, y }) && world.has({ ...this.cell, y })) y++;
@@ -453,7 +598,7 @@ export class Animal {
     } else {
       if (this.onArrive) this.finish(true);
       this.phase = 0;
-      if (!this.isCharacter) {
+      if (!this.isCharacter && !this.isStatic) {
         this.wait -= dt;
         if (this.wait <= 0) {
           this.wait = 1.5 + Math.random() * 3;
@@ -481,6 +626,7 @@ export class Animal {
     const swing = moving ? Math.sin(this.phase) * 0.7 : 0;
     this.model.legs.forEach((l, i) => (l.rotation.x = i % 2 ? -swing : swing));
     this.model.arms.forEach((a, i) => (a.rotation.x = i % 2 ? swing : -swing));
+    this.animateSpecial();
 
     if (this.bubble) {
       this.bubble.position.y = this.model.height + 0.75 + Math.sin(this.time * 2.5) * 0.06;
@@ -496,6 +642,34 @@ export class Animal {
         arrow.position.y = this.model.height + 0.45 + Math.abs(Math.sin(this.time * 4)) * 0.2;
         arrow.rotation.y += dt * 3;
       }
+    }
+  }
+
+  /** Mávání princezny, rozpadání a skládání sněhuláka, houpání loďky. */
+  private animateSpecial(): void {
+    const t = this.time;
+    if (this.model.wave) {
+      // ruka nahoře a mává
+      this.model.wave.rotation.z = -2.4 + Math.sin(t * 6) * 0.45;
+    }
+    if (this.model.parts) {
+      const [mid, head] = this.model.parts;
+      // 7 s cyklus: stojí → rozpadne se → zase se složí
+      const c = t % 7;
+      let k = 0; // 0 = složený, 1 = rozpadlý
+      if (c > 4.6 && c <= 5.2) k = (c - 4.6) / 0.6;
+      else if (c > 5.2 && c <= 6.0) k = 1;
+      else if (c > 6.0) k = 1 - (c - 6.0);
+      const e = k * k * (3 - 2 * k);
+      mid.position.set(0.45 * e, 0.5 - 0.5 * e, 0.1 * e);
+      mid.rotation.z = -1.2 * e;
+      head.position.set(-0.5 * e, 0.94 - 0.8 * e, 0.3 * e);
+      head.rotation.z = 0.9 * e;
+      if (k === 0) head.position.y = 0.94 + Math.abs(Math.sin(t * 2)) * 0.03;
+    }
+    if (this.kind === 'boat') {
+      this.model.root.position.y = Math.sin(t * 1.8) * 0.05 - 0.15;
+      this.model.root.rotation.z = Math.sin(t * 1.3) * 0.05;
     }
   }
 

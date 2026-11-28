@@ -6,8 +6,10 @@ import { ParentZone } from './ui/ParentZone';
 import { QuizOverlay } from './ui/QuizOverlay';
 import { TreasureOverlay } from './ui/TreasureOverlay';
 import { WorldsMap } from './ui/WorldsMap';
-import { WORLD_ID } from './game/rewards';
 import { allMissionsDone } from './game/rewards';
+import { TravelOverlay } from './ui/TravelOverlay';
+import { PuzzleGame } from './ui/PuzzleGame';
+import { SlingshotGame } from './ui/SlingshotGame';
 
 export default function App() {
   const [game] = useState(() => new GameController());
@@ -29,12 +31,15 @@ export default function App() {
       {o?.kind === 'success' && <Success game={game} ui={ui} id={o.mission} keyAwarded={o.keyAwarded} />}
       {o?.kind === 'architect' && <ArchitectMenu game={game} ui={ui} noRoom={o.noRoom} />}
       {o?.kind === 'meadowConfirm' && <MeadowConfirm game={game} />}
-      {o?.kind === 'worlds' && <WorldsMap game={game} hasKey={ui.keys.includes(WORLD_ID)} />}
-      {o?.kind === 'treasure' && <TreasureOverlay game={game} keys={ui.keys.length} fresh={o.fresh} allDone={allMissionsDone(ui.completed)} />}
+      {o?.kind === 'worlds' && <WorldsMap game={game} current={ui.worldId} keys={ui.keys} />}
+      {o?.kind === 'treasure' && <TreasureOverlay game={game} keys={ui.keys.length} fresh={o.fresh} allDone={allMissionsDone(ui.completed, ui.worldId)} />}
+      {o?.kind === 'travel' && <TravelOverlay to={o.to} />}
+      {o?.kind === 'puzzle' && <PuzzleGame game={game} />}
+      {o?.kind === 'sling' && <SlingshotGame game={game} />}
       {o?.kind === 'templateDone' && <TemplateDone game={game} template={o.template} />}
       {o?.kind === 'parents' && <ParentZone game={game} ui={ui} />}
       {o?.kind === 'break' && <BreakOverlay game={game} />}
-      {o?.kind === 'quiz' && <QuizOverlay game={game} quiz={o.quiz} wrong={o.wrong} solved={o.solved} help={o.help} />}
+      {o?.kind === 'quiz' && <QuizOverlay game={game} quiz={o.quiz} wrong={o.wrong} solved={o.solved} help={o.help} boxBlock={ui.worldId === 'ice' ? 'gift' : 'question'} />}
       {!ui.started && <StartScreen game={game} />}
     </div>
   );

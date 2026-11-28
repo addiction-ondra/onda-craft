@@ -118,6 +118,23 @@ Každá mise má: **úvod s animovanou ukázkou** (karta + hlas), **průběh** (
 se plní), **nápovědu** (po nečinnosti nebo při jiném materiálu – nikdy trest),
 **oslavu** (hvězdička, konfety, pochvala) a návrat do volného stavění.
 
+### Světy (v0.7)
+
+- `game/worlds.ts` – `WorldDef` pro každý svět: generátor mapy, kostka úkolu (`question`/`gift`),
+  místa beden, paleta, start postav, zvířátka, NPC, loďka (voda + místo nástupu), hrad, téma (léto/zima).
+- `UNLOCKED_BY` – svět se otevře klíčem z předchozího (ostrov → Ledové království).
+- Mise mají `world`; `missionsFor(world)` vrací 5 misí daného světa. Logika ledových misí v `game/iceMissions.ts`.
+- Uložení v4: `{ version, current, worlds: { island, ice }, settings, material, keys }` (migrace z v1–v3 do `island`).
+- NPC hry jsou okna jako kvízy: `ui/PuzzleGame.tsx` (posouvání dílků), `ui/SlingshotGame.tsx` (prak, vlastní jednoduchá fyzika).
+
+| Ledové království | Vyhodnocení |
+|---|---|
+| Sněhulák | 3 sněhové kostky na svítících místech (`stackStatus`), jiný materiál se jemně vrátí |
+| Věž z 5 kostek | 5 kostek na sobě, hlas počítá |
+| Vzor | led, dřevo, led, ? ? ? – doplnit (`rowStatus`) |
+| Krystaly | 3 schované krystaly, ťuknutím najdeš |
+| Čísla | sněhové koule 1–5, ťukat popořadě (špatná = „zkus číslo …“) |
+
 ## 6. Pedagogické zásady
 
 1. Nejdřív ukázat, pak hrát (úvodní animace + hlas).
@@ -135,7 +152,9 @@ se plní), **nápovědu** (po nečinnosti nebo při jiném materiálu – nikdy 
 - **v0.4** – režimy panáček / kladivo / Stavitel (šablony hrad, domeček, farma), prázdná louka,
   klíč k pokladu za všechny úkoly. ✅
 - **v0.5** – truhla se 3 zámky (klíč nahoře vždy viditelný), oslava klíče, setkání Ondry a Laury. ✅
-- **v0.6** – další světy (výběr ostrova); klíče z nich otevřou truhlu s pokladem.
-- **v0.7** – mise 6 (čísla: postav věž z N kostek, hlasové počítání), mise 7 (tvary: obtáhni čtverec/obdélník/trojúhelník na zemi).
+- **v0.6** – mapa světů, setkání postav, pohlazení Freného. ✅
+- **v0.7** – **Ledové království** (loďka mezi světy, dárky místo beden, 5 misí: sněhulák, věž z 5,
+  vzor led–dřevo, krystaly, čísla 1–5; princezna Vločka s puzzle, sněhulák Bobek s prakem). ✅
+- **v0.7.x** – mise tvary (obtáhni čtverec/obdélník/trojúhelník na zemi), třetí svět (Ostrov s majákem).
 - **v0.8** – mise 8 (písmena z kostek, začáteční hlásky), více světů / slotů pro sourozence.
 - Průběžně: přístupnost (větší kontrast), výkon na starších iPadech, nahrané lidské hlasy jako fallback.

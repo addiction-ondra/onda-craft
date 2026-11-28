@@ -88,8 +88,9 @@ describe('klíč k pokladu', () => {
 
   it('uložení z verze 2 se načte (bez klíčů)', () => {
     const w = generateDefaultWorld();
-    const v2 = { ...serialize({ world: w, activeMission: null, completed: ['wood5'], settings: DEFAULT_SETTINGS, material: 'wood' }), version: 2 } as Record<string, unknown>;
-    delete v2.keys;
+    // starý formát v2: jeden svět přímo v kořeni
+    const v4 = serialize({ world: w, activeMission: null, completed: ['wood5'], settings: DEFAULT_SETTINGS, material: 'wood' });
+    const v2 = { version: 2, ...v4.worlds.island, settings: DEFAULT_SETTINGS, material: 'wood' } as Record<string, unknown>;
     delete v2.template;
     const l = deserialize(JSON.stringify(v2));
     expect(l.world?.size).toBe(w.size);

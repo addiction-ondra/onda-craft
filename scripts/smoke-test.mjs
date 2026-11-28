@@ -102,7 +102,7 @@ async function tapCreature(page, which) {
     await settle(page);
     const r = await page.evaluate((which) => {
       const c = window.__onda.controller;
-      const a = c.characters.get(which) ?? c.animals.get(which);
+      const a = c.characters.get(which) ?? c.animals.get(which) ?? window.__onda.view.animals.find((x) => x.kind === which);
       const g = a.group.position;
       const s = window.__onda.view.projectToScreen({ x: g.x - 0.5, y: g.y - 0.6, z: g.z - 0.5 }, 'top');
       const hit = window.__onda.view.pick(s.x, s.y);
@@ -582,10 +582,160 @@ async function iphoneMapAnimated() {
   await ctx.close();
 }
 
+/** Ledové království: lodička, paleta, úkoly, puzzle, prak, návrat přes mapu. */
+async function iceFlow() {
+  console.log('\nLedové království (iPad):');
+  const ctx = await browser.newContext({ ...devices['iPad (gen 7) landscape'], reducedMotion: 'reduce' });
+  const page = await ctx.newPage();
+  const errors = [];
+  page.on('pageerror', (e) => errors.push(e.message));
+  await page.goto(`${BASE}/?test`);
+  await page.waitForFunction(() => !!window.__onda);
+  await page.getByRole('button', { name: 'Hrát' }).click();
+  // klíč z ostrova už máme → objeví se lodička
+  await page.evaluate(() => {
+    const c = window.__onda.controller;
+    c.set({ keys: ['island'] });
+    c.refreshBoat();
+  });
+  ok(!!(await page.evaluate(() => window.__onda.controller.boat)), 's klíčem z ostrova je na vodě lodička s mapou');
+  await page.screenshot({ path: `${OUT}/40-boat.png` });
+  ok(await tapCreature(page, 'boat'), 'na lodičku jde ťuknout');
+  await page.waitForFunction(() => window.__onda.controller.getSnapshot().overlay?.kind === 'travel', null, { timeout: 120000 }).catch(() => {});
+  ok((await snap(page)).overlay?.kind === 'travel', 'Ondra došel k lodičce a pluje se');
+  await page.screenshot({ path: `${OUT}/41-travel.png` });
+  await page.waitForFunction(() => window.__onda.controller.getSnapshot().worldId === 'ice' && !window.__onda.controller.getSnapshot().overlay, null, { timeout: 20000 }).catch(() => {});
+  let s = await snap(page);
+  ok(s.worldId === 'ice' && !s.overlay, 'doplouli jsme do Ledového království');
+  const inv = await page.evaluate(() => {
+    const w = window.__onda.world();
+    return { gifts: w.count('gift'), questions: w.count('question'), snow: w.count('snow'), npcs: window.__onda.view.animals.map((a) => a.kind) };
+  });
+  ok(inv.gifts >= 1 && inv.questions === 0 && inv.snow > 100, `svět je zasněžený a místo beden jsou dárky (${inv.gifts})`);
+  ok(inv.npcs.includes('princess') && inv.npcs.includes('snowman') && inv.npcs.includes('boat'), 'je tu princezna Vločka, sněhulák Bobek a lodička zpět');
+  await sleep(800);
+  await page.screenshot({ path: `${OUT}/42-ice-world.png` });
+
+  // paleta: led, sníh, kámen, dřevo
+  await page.getByRole('button', { name: 'Stavění z kostek' }).click();
+  const labels = await page.locator('.palette .swatch').evaluateAll((els) => els.map((e) => e.getAttribute('aria-label')));
+  ok(JSON.stringify(labels) === JSON.stringify(['led', 'sníh', 'kámen', 'dřevo']), `paleta Ledového království: ${labels.join(', ')}`);
+
+  // úkoly světa
+  await page.getByRole('button', { name: 'Úkoly' }).click();
+  const titles = await page.locator('.menu-item:not(.free)').evaluateAll((els) => els.map((e) => e.getAttribute('aria-label')));
+  ok(titles.length === 5 && titles[0] === 'Postav sněhuláka', `5 nových úkolů: ${titles.join(' | ')}`);
+  await page.screenshot({ path: `${OUT}/43-ice-missions.png` });
+
+  // ÚKOL: sněhulák (špatný materiál se vrátí, sníh se počítá)
+  await page.getByRole('button', { name: 'Postav sněhuláka' }).click();
+  await page.screenshot({ path: `${OUT}/44-intro-snowman.png` });
+  await page.getByRole('button', { name: 'Jdeme na to!' }).click();
+  await page.getByRole('button', { name: 'dřevo' }).click();
+  const slot0 = { x: 7, y: 1, z: 15 };
+  await tapGhost(page, slot0);
+  await sleep(1500);
+  ok((await blockAt(page, slot0)) === null && (await snap(page)).highlightMaterial === 'snow', 'sněhulák: dřevo se jemně vrátí a rozbliká se sníh');
+  await page.getByRole('button', { name: 'sníh' }).click();
+  for (const y of [1, 2, 3]) await tapGhost(page, { x: 7, y, z: 15 });
+  await page.waitForFunction(() => window.__onda.controller.getSnapshot().overlay?.kind === 'success', null, { timeout: 8000 }).catch(() => {});
+  ok((await snap(page)).completed.includes('snowman'), 'sněhulák postavený – úkol splněn');
+  await page.screenshot({ path: `${OUT}/45-snowman-done.png` });
+  await page.getByRole('button', { name: 'Stavět dál' }).click();
+
+  // ÚKOL: čísla 1–5 (jiné číslo = rada, popořadě = hotovo)
+  await page.getByRole('button', { name: 'Úkoly' }).click();
+  await page.getByRole('button', { name: 'Čísla 1 až 5' }).click();
+  await page.getByRole('button', { name: 'Jdeme na to!' }).click();
+  const targets = await page.evaluate(() => window.__onda.controller.mission.targets);
+  await page.screenshot({ path: `${OUT}/46-numbers.png` });
+  await tapVisible(page, targets[1]);
+  ok((await snap(page)).mission?.progress === 0, 'čísla: ťuknutí na dvojku jako první nic nepokazí (jen rada)');
+  for (const t of targets) {
+    for (let k = 0; k < 2; k++) {
+      const before = (await snap(page)).mission?.progress ?? 5;
+      await tapVisible(page, t);
+      if (((await snap(page)).mission?.progress ?? 5) > before) break;
+    }
+  }
+  await page.waitForFunction(() => window.__onda.controller.getSnapshot().completed.includes('numbers'), null, { timeout: 8000 }).catch(() => {});
+  ok((await snap(page)).completed.includes('numbers'), 'čísla 1–5 popořadě – úkol splněn');
+  await page.waitForFunction(() => window.__onda.controller.getSnapshot().overlay?.kind === 'success', null, { timeout: 5000 }).catch(() => {});
+  await page.getByRole('button', { name: 'Stavět dál' }).click();
+
+  // PRINCEZNA: dítě k ní dojde → puzzle; dílky se posunou na místo
+  await page.getByRole('button', { name: 'Chození' }).click();
+  await page.getByRole('button', { name: 'Ondra' }).click();
+  ok(await tapCreature(page, 'princess'), 'na princeznu Vločku jde ťuknout');
+  await page.waitForFunction(() => window.__onda.controller.getSnapshot().overlay?.kind === 'puzzle', null, { timeout: 120000 }).catch(() => {});
+  ok((await snap(page)).overlay?.kind === 'puzzle', 'Ondra došel k princezně a otevřelo se puzzle');
+  await sleep(400);
+  await page.screenshot({ path: `${OUT}/47-puzzle.png` });
+  for (let i = 0; i < 6; i++) {
+    const piece = await page.locator(`[data-piece="${i}"]`).boundingBox();
+    const slot = await page.locator('.puzzle-slot').nth(i).boundingBox();
+    await page.mouse.move(piece.x + piece.width / 2, piece.y + piece.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(slot.x + slot.width / 2, slot.y + slot.height / 2, { steps: 8 });
+    await page.mouse.up();
+    await sleep(350);
+  }
+  ok(await page.locator('.puzzle-done').isVisible(), 'puzzle složené posouváním dílků');
+  await page.screenshot({ path: `${OUT}/48-puzzle-done.png` });
+  await page.locator('.puzzle-done').getByRole('button').click();
+
+  // SNĚHULÁK BOBEK: dítě k němu dojde → prak, střílí se kostky na ledový hrad
+  await page.getByRole('button', { name: 'Laura' }).click();
+  ok(await tapCreature(page, 'snowman'), 'na sněhuláka Bobka jde ťuknout');
+  await page.waitForFunction(() => window.__onda.controller.getSnapshot().overlay?.kind === 'sling', null, { timeout: 120000 }).catch(() => {});
+  ok((await snap(page)).overlay?.kind === 'sling', 'Laura došla k Bobkovi a otevřel se prak');
+  const cv = await page.locator('.sling-canvas').boundingBox();
+  const at = (x, y) => ({ x: cv.x + (x / 900) * cv.width, y: cv.y + (y / 500) * cv.height });
+  for (const pull of [
+    [60, 380],
+    [55, 395],
+    [65, 365],
+    [50, 400],
+    [60, 350],
+    [58, 385],
+  ]) {
+    const a = at(160, 340);
+    const b = at(...pull);
+    await page.mouse.move(a.x, a.y);
+    await page.mouse.down();
+    await page.mouse.move(b.x, b.y, { steps: 6 });
+    await page.screenshot({ path: `${OUT}/49-sling-aim.png` });
+    await page.mouse.up();
+    await page.waitForFunction(() => !window.__sling.shot.flying, null, { timeout: 15000 }).catch(() => {});
+    await sleep(800);
+    if (await page.evaluate(() => window.__sling.won)) break;
+  }
+  const knockedN = await page.evaluate(() => window.__sling.blocks.filter((b) => Math.hypot(b.x - b.ox, b.y - b.oy) > 25 || Math.abs(b.rot) > 0.35).length);
+  ok(knockedN > 0, `prak: kostky boří ledový hrad (shozeno ${knockedN} kostek)`);
+  await page.screenshot({ path: `${OUT}/50-sling.png` });
+  await page.getByRole('button', { name: 'Zavřít' }).click();
+
+  // zpět na ostrov přes mapu
+  await page.locator('.mode-col').getByRole('button', { name: 'Mapa světů' }).click();
+  await page.screenshot({ path: `${OUT}/51-map-ice.png` });
+  await page.locator('.worlds-map g[role=button]').nth(0).click();
+  await page.waitForFunction(() => window.__onda.controller.getSnapshot().worldId === 'island' && !window.__onda.controller.getSnapshot().overlay, null, { timeout: 120000 }).catch(() => {});
+  s = await snap(page);
+  ok(s.worldId === 'island', 'přes mapu se dá doplout zpátky na ostrov');
+  const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('ondacraft:save')));
+  ok(saved.version === 4 && saved.worlds.ice?.completed.includes('snowman') && saved.current === 'island', 'oba světy se ukládají zvlášť (sněhulák zůstal v Ledovém království)');
+  ok(errors.length === 0, `bez chyb v konzoli${errors.length ? ': ' + errors.join(' | ') : ''}`);
+  await ctx.close();
+}
+
 try {
-  await ipadFlow();
-  await iphoneFlow();
-  await iphoneMapAnimated();
+  // ONLY=ice npm run test:e2e → jen Ledové království (rychlé ladění)
+  if (process.env.ONLY !== 'ice') {
+    await ipadFlow();
+    await iphoneFlow();
+    await iphoneMapAnimated();
+  }
+  await iceFlow();
 } catch (e) {
   failures++;
   console.error(e);

@@ -189,7 +189,9 @@ describe('ukládání', () => {
     expect(deserialize('{nonsense').world).toBeNull();
     expect(deserialize(JSON.stringify({ version: 999 })).world).toBeNull();
     const s = new MemoryStorage();
-    s.setItem(SAVE_KEY, JSON.stringify({ ...serialize({ world: new World(), activeMission: null, completed: [], settings: DEFAULT_SETTINGS, material: 'wood' }), completed: ['hack', 'wood5'] }));
+    const data = serialize({ world: new World(), activeMission: null, completed: [], settings: DEFAULT_SETTINGS, material: 'wood' });
+    (data.worlds.island as { completed: string[] }).completed = ['hack', 'wood5'];
+    s.setItem(SAVE_KEY, JSON.stringify(data));
     expect(loadFromStorage(s).completed).toEqual(['wood5']);
   });
 

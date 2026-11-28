@@ -15,6 +15,10 @@ export const BLOCK_TYPES = [
   'wall', // 9 – zeď domečku
   'roof', // 10 – střecha
   'question', // 11 – bedna s otazníkem (úkol pro postavičky)
+  'ice', // 12 – led (Ledové království)
+  'snow', // 13 – zem se sněhem
+  'gift', // 14 – dárek (v Ledovém království místo bedny s otazníkem)
+  'crystal', // 15 – ledový krystal (mise „Najdi krystaly“)
 ] as const;
 
 export type BlockType = (typeof BLOCK_TYPES)[number];
@@ -51,7 +55,20 @@ export const BLOCKS: Record<BlockType, BlockDef> = {
   wall: def('wall', '#fbefd5', false),
   roof: def('roof', '#5c6bc0', false),
   question: def('question', '#f59f00', false),
+  ice: def('ice', '#a5d8ff', true),
+  snow: def('snow', '#f8f9fa', true),
+  gift: def('gift', '#e64980', false),
+  crystal: def('crystal', '#66d9e8', false),
 };
+
+/** Palety podle světa (Ledové království má led, sníh, kámen a dřevo). */
+export const PALETTES: Record<'island' | 'ice', BlockType[]> = {
+  island: ['wood', 'stone', 'red', 'grass', 'sand', 'blue'],
+  ice: ['ice', 'snow', 'stone', 'wood'],
+};
+
+/** Kostky s úkolem (bedna s otazníkem / dárek) – fungují stejně. */
+export const isBoxBlock = (t: BlockType | undefined): boolean => t === 'question' || t === 'gift';
 
 /** Materiály v paletě – přesně 6, v tomto pořadí. */
 export const PALETTE: BlockType[] = ['wood', 'stone', 'red', 'grass', 'sand', 'blue'];

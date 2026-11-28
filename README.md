@@ -11,6 +11,23 @@ ovečkou a kuřátkem. Ovládání dotykem, minimum textu, české hlasové poky
 
 Architektura a roadmapa: [PLAN.md](PLAN.md) · pravidla vývoje: [CLAUDE.md](CLAUDE.md)
 
+## Co umí verze 0.7 – Ledové království ❄️
+
+- **Cesta loďkou:** když jsou na ostrově hotové všechny úkoly (a klíč je v truhle), na vodě
+  se objeví **loďka** s bublinou mapy. Ťukni na ni → Ondra a Laura k ní dojdou a odplují.
+  Na mapě světů se dá ťuknout na otevřený svět (⛵) – děti dojdou k loďce a odjedou tam.
+  Každý svět si pamatuje své stavby i úkoly.
+- **Ledové království:** stejně velký zasněžený svět (sněžení), ledový hrad s krystaly,
+  zamrzlé jezero, stromy se sněhem. Kostky: **led, zem se sněhem, šedý kámen, dřevo**.
+- Místo beden s otazníkem jsou **dárky** – princip stejný (dojdi, otevři, vyřeš úkol).
+- **5 nových úkolů:** sněhulák ze 3 sněhových kostek, věž z 5 kostek (počítání),
+  vzor led–dřevo (doplň řadu), najdi 3 krystaly, ťukej na sněhové koule od 1 do 5.
+- **Princezna Vločka** (v modrých šatech u ledového hradu, mává, bublina „!!“) –
+  když k ní děti dojdou, otevře se **puzzle** (6 dílků, obrázek ledového království s dětmi).
+- **Sněhulák Bobek** se pořád rozpadá a zase skládá – otevře hru s **prakem**: posíláš
+  kostky na ledový hrad z kostek, dokud ho nesestřelíš (neomezeně pokusů, žádný trest).
+- Postavičky jsou vlastní (ne Disney) – grafika je kreslená kódem.
+
 ## Co umí verze 0.6.2
 
 - Když Ondra nebo Laura dojde k Frenému: nad dítětem ikonka pejska, dítě řekne

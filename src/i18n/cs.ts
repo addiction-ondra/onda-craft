@@ -18,6 +18,10 @@ export const CS = {
     wall: 'zeď',
     roof: 'střecha',
     question: 'bedna s otazníkem',
+    ice: 'led',
+    snow: 'sníh',
+    gift: 'dárek',
+    crystal: 'krystal',
   } satisfies Record<BlockType, string>,
 
   /** Hlas při výběru materiálu. */
@@ -34,6 +38,10 @@ export const CS = {
     wall: 'Zeď',
     roof: 'Střecha',
     question: 'Bedna s otazníkem',
+    ice: 'Modrý led',
+    snow: 'Bílý sníh',
+    gift: 'Dárek',
+    crystal: 'Ledový krystal',
   } satisfies Record<BlockType, string>,
 
   voice: {
@@ -54,6 +62,8 @@ export const CS = {
     cantReach: 'Tam nedojdu. Postav mi schody nebo most!',
     inCastle: 'Hurá, jsem na hradě!',
     petDog: 'Frený, hudlánka!',
+    giftNeedsFriend: 'V dárku je úkol! Ťukni na Ondru nebo Lauru a pošli je k dárku.',
+    newGift: 'Objevil se nový dárek! Najdeš ho?',
     chooseFriend: 'Ahoj! Vyber si dole Ondru nebo Lauru a pojď se projít po světě.',
     walkMode: 'Chození. Vyber si kamaráda a ťukni, kam má jít.',
     pickFirst: 'Nejdřív si vyber, kdo půjde. Ťukni dole na Ondru nebo Lauru.',
@@ -119,6 +129,44 @@ export const CS = {
       keepFree: 'Nech Frenému dveře a místo uvnitř! Tu kostku můžeš gumou schovat.',
       success: 'Hurá! Domeček je hotový. Frený jde dovnitř. Haf, děkuje ti!',
     },
+    snowman: {
+      title: 'Postav sněhuláka',
+      intro: 'Sněhulák Bobek chce kamaráda! Postav sněhuláka ze tří sněhových koulí. Vyber dole bílý sníh a ťukej na svítící místo.',
+      hint: 'Vyber bílý sníh a ťukni na svítící místo. Tři koule na sebe!',
+      count: ['Jedna koule!', 'Dvě koule!', 'Tři koule!'],
+      wrong: 'Sněhulák je ze sněhu. Vyber dole bílý sníh.',
+      success: 'Hurá! Sněhulák je hotový. Bobek má nového kamaráda!',
+    },
+    tower5: {
+      title: 'Věž z pěti kostek',
+      intro: 'Postav vysokou věž z pěti kostek. Ťukej na svítící místo a budeme počítat spolu!',
+      hint: 'Ťukni na svítící místo. Věž roste nahoru!',
+      count: ['Jedna!', 'Dvě!', 'Tři!', 'Čtyři!', 'Pět!'],
+      success: 'Hurá! Věž má pět pater. Jedna, dva, tři, čtyři, pět!',
+    },
+    pattern: {
+      title: 'Dokonči řadu',
+      intro: 'Podívej se na řadu kostek: led, dřevo, led. Co přijde dál? Dokonči řadu na svítících místech!',
+      hint: 'Led, dřevo, led, dřevo… Co přijde teď? Vyber správnou kostku a ťukni na svítící místo.',
+      wrongWood: 'Skoro! Po ledu přijde dřevo. Zkus hnědé dřevo.',
+      wrongIce: 'Skoro! Po dřevu přijde led. Zkus modrý led.',
+      success: 'Hurá! Řada je hotová. Led, dřevo, led, dřevo, led, dřevo. Jsi chytrý!',
+    },
+    crystals: {
+      title: 'Najdi 3 krystaly',
+      intro: 'V Ledovém království se schovaly tři ledové krystaly. Najdi je a ťukni na ně! Svět můžeš otáčet.',
+      hint: 'Podívej se, kde to třpytí. Zkus otočit svět šipkami.',
+      found: ['Jeden krystal!', 'Druhý! Ještě jeden.', ''],
+      success: 'Hurá! Našel jsi všechny krystaly. Svítí jako hvězdičky!',
+    },
+    numbers: {
+      title: 'Čísla 1 až 5',
+      intro: 'Na sněhových koulích jsou čísla. Ťukni na ně popořadě: jedna, dva, tři, čtyři, pět!',
+      hint: 'Hledej kouli s číslem, které přijde teď.',
+      next: (n: string) => `Teď hledáme číslo ${n}.`,
+      says: ['Jedna!', 'Dvě!', 'Tři!', 'Čtyři!', 'Pět!'],
+      success: 'Hurá! Jedna, dva, tři, čtyři, pět. Umíš čísla!',
+    },
   } satisfies Record<MissionId, { title: string; intro: string; hint: string; success: string } & Record<string, unknown>>,
 
   treasure: {
@@ -182,13 +230,55 @@ export const CS = {
     ],
   ] as Array<Array<{ who: 'ondra' | 'lauriska'; text: string }>>,
 
+  /** Cestování lodičkou mezi světy. */
+  travel: {
+    boatReady: 'Na vodě je lodička! Ťukni na ni a poplujeme do dalšího světa.',
+    boatTap: 'Jdeme k lodičce!',
+    sailing: 'Plujeme! Houpy hou!',
+    welcome: {
+      island: 'Jsme zpátky na ostrově s hradem!',
+      ice: 'Vítej v Ledovém království! Je tu sníh, led a ledový hrad. Princezna Vločka a sněhulák Bobek potřebují pomoc!',
+    },
+    noTrip: 'Lodička čeká. Až získáš klíč, poplujeme do dalšího světa!',
+  },
+
+  /** Postavy v Ledovém království (vlastní postavy, ne převzaté). */
+  npcs: {
+    princess: {
+      name: 'Princezna Vločka',
+      tapNeedsFriend: 'Princezna Vločka potřebuje pomoc! Pošli k ní Ondru nebo Lauru.',
+      hello: 'Ahoj děti! Rozbil se mi obrázek mého ledového hradu. Pomůžete mi ho poskládat?',
+      done: 'Děkuju! Obrázek je zase celý. Jste skvělí pomocníci!',
+    },
+    snowman: {
+      name: 'Sněhulák Bobek',
+      tapNeedsFriend: 'Sněhulák Bobek si chce hrát! Pošli k němu Ondru nebo Lauru.',
+      hello: 'Ahoj! Já jsem Bobek. Pořád se rozpadám! Zahrajeme si s prakem? Zbouráme ledový hrad!',
+      shoot: 'Zatáhni za prak a pusť!',
+      hit: ['Bum!', 'Prásk!', 'Paráda!', 'Trefa!'],
+      done: 'Hurá! Hrad je zbouraný. Postavíme ho znovu?',
+    },
+  },
+
+  puzzle: {
+    title: 'Puzzle',
+    hint: 'Vezmi dílek prstem a posuň ho na správné místo.',
+    good: ['Sedí!', 'Výborně!', 'Ano!'],
+    again: 'Tady ne. Zkus jiné místo.',
+  },
+
+  sling: {
+    title: 'Prak',
+    again: 'Postavit znovu',
+  },
+
   worlds: {
     title: 'Mapa světů',
-    names: ['Ostrov s hradem', 'Zimní ostrov', 'Ostrov s majákem'],
+    names: ['Ostrov s hradem', 'Ledové království', 'Ostrov s majákem'],
     noKey: 'Tohle je mapa světů. Jsi na ostrově s hradem. Až tu splníš všechny úkoly a získáš klíč, otevře se cesta dál.',
-    withKey: 'Tohle je mapa světů. Máš klíč! Další ostrov se právě staví a brzy se tam podíváš.',
-    here: 'Tady jsi teď. Ostrov s hradem!',
-    locked: 'Tam se dostaneš s klíčem. Nejdřív splň všechny úkoly na ostrově s hradem.',
+    withKey: 'Tohle je mapa světů. Ťukni na otevřený ostrov a poplujeme lodičkou!',
+    here: 'Tady jsi teď!',
+    locked: 'Tam se dostaneš s klíčem. Nejdřív splň všechny úkoly.',
     building: 'Tenhle ostrov se ještě staví. Brzy se tam podíváš!',
   },
 

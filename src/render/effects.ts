@@ -92,6 +92,45 @@ export class Effects {
     }
   }
 
+  private labels = new THREE.Group();
+  private labelMats = new Map<string, THREE.SpriteMaterial>();
+
+  /** Čísla nad sněhovými koulemi (mise „Čísla 1–5“). `done` = už nalezené (hvězdička). */
+  setNumberLabels(list: Array<{ pos: Vec3; n: number; done: boolean }>): void {
+    if (!this.labels.parent) this.group.add(this.labels);
+    this.labels.clear();
+    for (const l of list) {
+      const key = l.done ? 'done' : String(l.n);
+      let m = this.labelMats.get(key);
+      if (!m) {
+        const c = document.createElement('canvas');
+        c.width = c.height = 128;
+        const g = c.getContext('2d')!;
+        g.fillStyle = l.done ? '#ffd43b' : '#ffffff';
+        g.strokeStyle = l.done ? '#e67700' : '#1c7ed6';
+        g.lineWidth = 8;
+        g.beginPath();
+        g.arc(64, 64, 54, 0, Math.PI * 2);
+        g.fill();
+        g.stroke();
+        g.fillStyle = l.done ? '#e67700' : '#1c7ed6';
+        g.font = 'bold 80px system-ui, sans-serif';
+        g.textAlign = 'center';
+        g.textBaseline = 'middle';
+        g.fillText(l.done ? '★' : String(l.n), 64, 70);
+        const tex = new THREE.CanvasTexture(c);
+        tex.colorSpace = THREE.SRGBColorSpace;
+        m = new THREE.SpriteMaterial({ map: tex, depthTest: false, transparent: true });
+        this.labelMats.set(key, m);
+      }
+      const sp = new THREE.Sprite(m);
+      sp.position.set(l.pos.x + 0.5, l.pos.y + 1.7, l.pos.z + 0.5);
+      sp.scale.setScalar(1.1);
+      sp.renderOrder = 10;
+      this.labels.add(sp);
+    }
+  }
+
   /** Svítící místa (pro ťuknutí: kostka se položí přímo do nich). */
   ghostObjects(): THREE.Object3D[] {
     return this.ghosts.children;

@@ -8,6 +8,7 @@ import {
   isFeedable,
   numberAt,
   isMissionTarget,
+  missionsFor,
   reduceMission,
   restoreMission,
   startMission,
@@ -657,6 +658,51 @@ export class GameController {
     this.set({ completed: [], keys: this.snapshot.keys.filter((k) => k !== this.worldId) });
     this.refreshBoat();
     this.saveNow();
+  }
+
+  // ------------------------------------------------- testovací režim (rodičovská zóna)
+
+  /** Test: rovnou do jiného světa (bez klíče a bez plavby). */
+  testJump(target: WorldId): void {
+    this.set({ overlay: null });
+    if (target !== this.worldId) this.switchWorld(target);
+    this.say(CS.travel.welcome[target]);
+  }
+
+  /** Test: všechny úkoly tohoto světa splněné → klíč, oslava a loďka. */
+  testCompleteAll(): void {
+    this.endMissionVisuals();
+    this.mission = null;
+    const completed = missionsFor(this.worldId).map((m) => m.id);
+    const award = awardKey(this.snapshot.keys, completed, this.worldId);
+    this.set({ overlay: null, mission: null, highlightMaterial: null, completed, keys: award.keys });
+    this.refreshBoat();
+    this.saveNow();
+    this.openTreasure(award.awarded);
+  }
+
+  /** Test: rovnou otevřít minihru / kvíz / plavbu. */
+  testOpen(what: 'puzzle' | 'sling' | 'quiz' | 'travel'): void {
+    this.set({ overlay: null });
+    if (what === 'puzzle' || what === 'sling') {
+      this.set({ overlay: { kind: what } });
+      this.say(CS.npcs[what === 'puzzle' ? 'princess' : 'snowman'].hello);
+    } else if (what === 'quiz') {
+      const findBox = (): Vec3 | undefined => {
+        for (const [k, t] of this.world.entries())
+          if (isBoxBlock(t)) {
+            const [x, y, z] = k.split(',').map(Number);
+            return { x, y, z };
+          }
+        return undefined;
+      };
+      if (!findBox()) this.spawnQuestionBox(false);
+      const box = findBox();
+      if (box) this.openQuiz(box);
+    } else {
+      const other = WORLD_IDS.find((w) => w !== this.worldId) ?? this.worldId;
+      this.sail(other);
+    }
   }
 
   /** Mapa světů (z truhly nebo z pravého panelu). */

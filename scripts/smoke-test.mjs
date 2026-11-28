@@ -728,7 +728,60 @@ async function iceFlow() {
   await ctx.close();
 }
 
+async function testModeFlow() {
+  console.log('\nTestovací režim (rodičovská zóna):');
+  const ctx = await browser.newContext({ ...devices['iPad (gen 7) landscape'], reducedMotion: 'reduce' });
+  const page = await ctx.newPage();
+  const errors = [];
+  page.on('pageerror', (e) => errors.push(e.message));
+  await page.goto(`${BASE}/?test`);
+  await page.waitForFunction(() => !!window.__onda);
+  await page.getByRole('button', { name: 'Hrát' }).click();
+  const openTestPanel = async () => {
+    await page.getByRole('button', { name: 'Pro rodiče' }).click();
+    const q = await page.locator('.gate h2').textContent();
+    const [a, b] = q.match(/\d+/g).map(Number);
+    for (const d of String(a + b)) await page.locator('.keypad button', { hasText: new RegExp(`^${d}$`) }).click();
+    await page.getByRole('button', { name: /Testovací režim/ }).click();
+  };
+  await openTestPanel();
+  await page.screenshot({ path: `${OUT}/60-test-mode.png` });
+  await page.locator('[data-test-world=ice]').click();
+  await page.waitForFunction(() => window.__onda.controller.getSnapshot().worldId === 'ice', null, { timeout: 10000 }).catch(() => {});
+  let s = await snap(page);
+  ok(s.worldId === 'ice' && !s.overlay && !s.keys.includes('island'), 'skok do Ledového království i bez klíče');
+  await openTestPanel();
+  await page.locator('[data-test=puzzle]').click();
+  ok((await snap(page)).overlay?.kind === 'puzzle', 'test: puzzle se otevře rovnou');
+  await page.getByRole('button', { name: 'Zavřít' }).click();
+  await openTestPanel();
+  await page.locator('[data-test=sling]').click();
+  ok((await snap(page)).overlay?.kind === 'sling', 'test: prak se otevře rovnou');
+  await page.getByRole('button', { name: 'Zavřít' }).click();
+  await openTestPanel();
+  await page.locator('[data-test=quiz]').click();
+  ok((await snap(page)).overlay?.kind === 'quiz', 'test: úkol z dárku se otevře rovnou');
+  await page.getByRole('button', { name: 'Zavřít' }).click();
+  await openTestPanel();
+  await page.locator('[data-test=complete]').click();
+  s = await snap(page);
+  ok(s.completed.length === 5 && s.keys.includes('ice') && s.overlay?.kind === 'treasure', 'test: splnit vše → klíč a truhla');
+  ok(!!(await page.evaluate(() => window.__onda.controller.boat)), 'test: po splnění je na vodě lodička');
+  await page.getByRole('button', { name: 'Zavřít' }).first().click().catch(() => {});
+  await page.evaluate(() => window.__onda.controller.closeOverlay());
+  await openTestPanel();
+  await page.locator('[data-test=travel]').click();
+  ok((await snap(page)).overlay?.kind === 'travel', 'test: plavba lodičkou');
+  await page.waitForFunction(() => window.__onda.controller.getSnapshot().worldId === 'island' && !window.__onda.controller.getSnapshot().overlay, null, { timeout: 20000 }).catch(() => {});
+  ok((await snap(page)).worldId === 'island', 'test: plavba dovezla zpět na ostrov');
+  ok(errors.length === 0, `bez chyb v konzoli${errors.length ? ': ' + errors.join(' | ') : ''}`);
+  await ctx.close();
+}
+
 try {
+  if (process.env.ONLY === 'test') {
+    await testModeFlow();
+  } else {
   // ONLY=ice npm run test:e2e → jen Ledové království (rychlé ladění)
   if (process.env.ONLY !== 'ice') {
     await ipadFlow();
@@ -736,6 +789,8 @@ try {
     await iphoneMapAnimated();
   }
   await iceFlow();
+  await testModeFlow();
+  }
 } catch (e) {
   failures++;
   console.error(e);

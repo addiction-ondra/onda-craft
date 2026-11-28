@@ -11,6 +11,11 @@ ovečkou a kuřátkem. Ovládání dotykem, minimum textu, české hlasové poky
 
 Architektura a roadmapa: [PLAN.md](PLAN.md) · pravidla vývoje: [CLAUDE.md](CLAUDE.md)
 
+## Co umí verze 0.7.1
+
+- V rodičovské zóně malé tlačítko **🧪 Testovací režim**: skok do libovolného světa (i bez klíče),
+  splnit všechny úkoly světa (klíč + loďka), rovnou otevřít úkol z bedny/dárku, puzzle, prak nebo plavbu.
+
 ## Co umí verze 0.7 – Ledové království ❄️
 
 - **Cesta loďkou:** když jsou na ostrově hotové všechny úkoly (a klíč je v truhle), na vodě

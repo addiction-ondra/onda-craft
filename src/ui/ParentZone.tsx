@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import type { GameController, UiSnapshot } from '../controller/GameController';
 import type { Settings } from '../game/settings';
 import { CS } from '../i18n/cs';
+import { WORLD_IDS } from '../game/worlds';
 import { IconClose } from './Icons';
 
 interface Props {
@@ -185,6 +186,8 @@ function ParentSettings({ game, ui }: Props) {
         )}
       </div>
 
+      <TestMode game={game} ui={ui} />
+
       <div className="info">
         <h3>{CS.ui.installTitle}</h3>
         <p>{CS.ui.installText}</p>
@@ -193,6 +196,49 @@ function ParentSettings({ game, ui }: Props) {
           {CS.ui.version} {version}
         </p>
       </div>
+    </div>
+  );
+}
+
+/** Testovací režim: malé tlačítko, po rozbalení rychlé skoky mezi světy a spouštění miniher. */
+function TestMode({ game, ui }: Props) {
+  const [open, setOpen] = useState(false);
+  const t = CS.ui.test;
+  return (
+    <div className="test-mode">
+      <button className="text-btn small" aria-expanded={open} onClick={() => setOpen(!open)}>
+        {open ? t.hide : t.button}
+      </button>
+      {open && (
+        <div className="test-panel" ref={(el) => el?.scrollIntoView({ block: 'end', behavior: 'smooth' })}>
+          <p className="note">{t.note}</p>
+          <div className="test-row">
+            <span>{t.worlds}</span>
+            {WORLD_IDS.map((w, i) => (
+              <button key={w} className={`text-btn ${ui.worldId === w ? 'on' : ''}`} data-test-world={w} onClick={() => game.testJump(w)}>
+                {CS.worlds.names[i]}
+              </button>
+            ))}
+          </div>
+          <div className="test-row">
+            <button className="text-btn" data-test="complete" onClick={() => game.testCompleteAll()}>
+              {t.completeAll}
+            </button>
+            <button className="text-btn" data-test="quiz" onClick={() => game.testOpen('quiz')}>
+              {t.quiz}
+            </button>
+            <button className="text-btn" data-test="puzzle" onClick={() => game.testOpen('puzzle')}>
+              {t.puzzle}
+            </button>
+            <button className="text-btn" data-test="sling" onClick={() => game.testOpen('sling')}>
+              {t.sling}
+            </button>
+            <button className="text-btn" data-test="travel" onClick={() => game.testOpen('travel')}>
+              {t.travel}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -385,6 +385,17 @@ export const CS = {
     breakTitle: 'Pauza?',
     breakOk: 'Dobře',
     rotateHint: 'Otoč zařízení',
+    test: {
+      button: '🧪 Testovací režim',
+      hide: '🧪 Skrýt testovací režim',
+      note: 'Pro rodiče: rychlé zkoušení funkcí. Skok do světa funguje i bez klíče.',
+      worlds: 'Skočit do světa',
+      completeAll: '⭐ Splnit všechny úkoly (klíč + loďka)',
+      quiz: '🎁 Úkol z bedny / dárku',
+      puzzle: '🧩 Puzzle princezny',
+      sling: '🎯 Prak sněhuláka',
+      travel: '⛵ Plavba lodičkou',
+    },
   },
 };
 

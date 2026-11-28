@@ -11,6 +11,21 @@ ovečkou a kuřátkem. Ovládání dotykem, minimum textu, české hlasové poky
 
 Architektura a roadmapa: [PLAN.md](PLAN.md) · pravidla vývoje: [CLAUDE.md](CLAUDE.md)
 
+## Co umí verze 0.9
+
+- **Čeština / angličtina**: pod ikonou pro rodiče jsou dvě kulaté vlajky 🇨🇿 🇬🇧 – dítě si samo vybere
+  jazyk hry (texty i hlas; Ondra, Laura a Frený mají jména stejná). Volba se pamatuje.
+  Pro anglický hlas musí mít zařízení nainstalovaný anglický hlas (iPad ho má).
+- **Klíče podle světů**: v liště nahoře i v truhle má každý svět svůj zámek (ostrov, Ledové
+  království, Pirátský ostrov) – klíč se ukáže přesně na místě světa, kde byly splněné úkoly.
+- **Ledové království**: zem má viditelné kostky (snazší míření), princezna Vločka stojí čelem k dětem.
+- **Tučňák Pepík** (na zamrzlém jezeře, „!!“) – **krasobruslení**: pohled shora na led, dítě obtáhne
+  tečkovaný tvar (kruh, čtverec, trojúhelník, srdíčko, hvězda) a Pepík ho pak objede.
+- **Vánoční stromeček** („!!“) – **spoj tečky podle vzoru**: 8 obrázků (podle pracovního listu
+  „Zakresli podle vzoru“). Nápověda při nečinnosti: nejdřív se čeká, pak se rozsvítí tečky,
+  které se mají spojit, a nakonec se čáry ukážou – dítě je pak samo zopakuje.
+- Nová verze aplikace se na iPadu stáhne sama i při návratu do aplikace (ne jen při novém spuštění).
+
 ## Co umí verze 0.8 – Pirátský ostrov 🏝️
 
 - **Třetí svět**: s klíčem z Ledového království se loďkou dopluje na Pirátský ostrov

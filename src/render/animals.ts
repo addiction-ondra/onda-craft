@@ -132,10 +132,10 @@ function bubbleMaterial(b: Exclude<Bubble, null>): THREE.SpriteMaterial {
 }
 
 export type AnimalKind = 'dog' | 'sheep' | 'chick';
-export type NpcKind = 'princess' | 'snowman' | 'boat' | 'pirate' | 'skeleton' | 'ship';
+export type NpcKind = 'princess' | 'snowman' | 'boat' | 'pirate' | 'skeleton' | 'ship' | 'penguin' | 'xmasTree';
 export type CreatureKind = AnimalKind | CharacterId | NpcKind;
 export const isNpcKind = (k: CreatureKind): k is NpcKind =>
-  k === 'princess' || k === 'snowman' || k === 'boat' || k === 'pirate' || k === 'skeleton' || k === 'ship';
+  k === 'princess' || k === 'snowman' || k === 'boat' || k === 'pirate' || k === 'skeleton' || k === 'ship' || k === 'penguin' || k === 'xmasTree';
 
 export const isCharacterKind = (k: CreatureKind): k is CharacterId => k === 'ondra' || k === 'lauriska';
 
@@ -175,6 +175,10 @@ interface Model {
   parts?: THREE.Group[];
   /** Tančící kostlivec: [levá ruka, pravá ruka, lebka]. */
   dance?: THREE.Group[];
+  /** Tučňák: tělo, které se kolébá a občas zatočí jako krasobruslař. */
+  skater?: THREE.Group;
+  /** Vánoční stromeček: hvězda, která se točí a svítí. */
+  star?: THREE.Group;
 }
 
 const EYE = '#1b1b1b';
@@ -511,6 +515,67 @@ function buildShip(): Model {
   return { root, legs: [], arms: [], height: 3.8 };
 }
 
+/** Tučňák Pepík – kolébavý krasobruslař na zamrzlém jezeře. */
+function buildPenguin(): Model {
+  const root = new THREE.Group();
+  const g = new THREE.Group();
+  root.add(g);
+  const black = '#212529';
+  g.add(box(0.44, 0.62, 0.38, black, 0, 0.36, 0)); // tělo
+  g.add(box(0.32, 0.5, 0.04, '#f8f9fa', 0, 0.32, 0.19)); // bílé bříško
+  g.add(box(0.36, 0.3, 0.32, black, 0, 0.8, 0.02)); // hlava
+  g.add(box(0.24, 0.16, 0.02, '#f8f9fa', 0, 0.8, 0.18)); // bílý obličej
+  g.add(box(0.05, 0.06, 0.02, EYE, -0.06, 0.84, 0.195));
+  g.add(box(0.05, 0.06, 0.02, EYE, 0.06, 0.84, 0.195));
+  g.add(box(0.1, 0.06, 0.12, '#ff922b', 0, 0.76, 0.24)); // zobáček
+  for (const s of [-1, 1]) {
+    const wing = box(0.06, 0.4, 0.22, black, s * 0.25, 0.42, 0);
+    wing.rotation.z = s * 0.25;
+    g.add(wing);
+    g.add(box(0.14, 0.04, 0.2, '#ff922b', s * 0.1, 0.02, 0.06)); // nožičky
+  }
+  g.add(box(0.4, 0.07, 0.36, '#e03131', 0, 0.64, 0.02)); // červená šála
+  g.add(box(0.08, 0.18, 0.05, '#e03131', 0.12, 0.55, 0.18));
+  return { root, legs: [], arms: [], height: 0.98, skater: g };
+}
+
+/** Vánoční stromeček s barevnými ozdobami a zlatou hvězdou. */
+function buildXmasTree(): Model {
+  const g = new THREE.Group();
+  g.add(box(0.2, 0.3, 0.2, '#8d5524', 0, 0.15, 0)); // kmínek
+  const layers: Array<[number, number]> = [
+    [0.95, 0.42],
+    [0.75, 0.82],
+    [0.55, 1.18],
+    [0.32, 1.5],
+  ];
+  for (const [w, y] of layers) g.add(box(w, 0.36, w, '#2b8a3e', 0, y, 0));
+  // ozdoby (koule) na stranách vrstev
+  const balls = ['#e03131', '#fcc419', '#1c7ed6', '#f06595', '#e03131', '#fcc419'];
+  let i = 0;
+  for (const [w, y] of layers.slice(0, 3))
+    for (const [dx, dz] of [
+      [1, 0],
+      [-1, 0],
+      [0, 1],
+      [0, -1],
+    ])
+      g.add(box(0.09, 0.09, 0.09, balls[i++ % balls.length], (dx * w) / 2, y - 0.08, (dz * w) / 2));
+  const star = new THREE.Group();
+  star.position.y = 1.82;
+  const gold = new THREE.MeshLambertMaterial({ color: '#ffd43b', emissive: '#f08c00' });
+  for (const r of [0, Math.PI / 4]) {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.22, 0.06), gold);
+    m.rotation.z = r;
+    star.add(m);
+  }
+  g.add(star);
+  // dárek pod stromečkem
+  g.add(box(0.22, 0.18, 0.22, '#e64980', 0.36, 0.09, 0.3));
+  g.add(box(0.04, 0.19, 0.23, '#ffd43b', 0.36, 0.09, 0.3));
+  return { root: g, legs: [], arms: [], height: 2.0, star };
+}
+
 function buildModel(kind: CreatureKind): Model {
   switch (kind) {
     case 'dog':
@@ -535,6 +600,10 @@ function buildModel(kind: CreatureKind): Model {
       return buildSkeleton();
     case 'ship':
       return buildShip();
+    case 'penguin':
+      return buildPenguin();
+    case 'xmasTree':
+      return buildXmasTree();
   }
 }
 
@@ -808,6 +877,17 @@ export class Animal {
       r.rotation.z = 0.4 + Math.abs(Math.sin(t * 4 + 1.5)) * 1.6;
       skull.rotation.z = Math.sin(t * 4) * 0.18;
       skull.position.y = 0.88 + Math.abs(Math.sin(t * 8)) * 0.04;
+    }
+    if (this.model.skater) {
+      // kolébání a každých 6 s piruetka
+      const c = t % 6;
+      this.model.skater.rotation.z = Math.sin(t * 5) * 0.08;
+      this.model.skater.rotation.y = c > 5 ? (c - 5) * Math.PI * 2 : 0;
+    }
+    if (this.model.star) {
+      this.model.star.rotation.y = t * 1.5;
+      const k = 1 + Math.abs(Math.sin(t * 3)) * 0.15;
+      this.model.star.scale.setScalar(k);
     }
     if (this.kind === 'ship') {
       this.model.root.position.y = Math.sin(t * 1.2) * 0.06 - 0.15;

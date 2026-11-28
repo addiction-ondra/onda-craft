@@ -344,7 +344,8 @@ const PAINTERS: Record<BlockType, FacePainters> = {
   roof: { top: combine(roof, border('#2f3a86')), side: combine(roof, border('#2f3a86')), bottom: roof },
   question: { top: questionBox, side: questionBox, bottom: questionBox },
   ice: { top: iceBlock, side: iceBlock, bottom: iceBlock },
-  snow: { top: snowTop, side: snowSide, bottom: noise('#e9ecef', 0.05) },
+  // obrys kostky – na sněhové pláni jsou vidět jednotlivá políčka (snazší míření)
+  snow: { top: combine(snowTop, border('#7f9ab8', 0.5)), side: combine(snowSide, border('#9fb3c8', 0.4)), bottom: noise('#e9ecef', 0.05) },
   gift: { top: giftBox, side: giftBox, bottom: giftBox },
   crystal: { top: crystal, side: crystal, bottom: crystal },
   barrel: { top: barrelTop, side: barrelSide, bottom: barrelTop },

@@ -26,5 +26,18 @@ createRoot(document.getElementById('root')!).render(
 
 // Service worker pro offline hraní (jen v produkčním buildu).
 if (import.meta.env.PROD && 'serviceWorker' in navigator) {
-  import('virtual:pwa-register').then(({ registerSW }) => registerSW({ immediate: true }));
+  import('virtual:pwa-register').then(({ registerSW }) =>
+    registerSW({
+      immediate: true,
+      // Aplikace na ploše iPadu se často jen „probudí“ – při každém návratu se podíváme,
+      // jestli není nová verze (stáhne se sama a stránka se obnoví).
+      onRegisteredSW(_url, reg) {
+        if (!reg) return;
+        document.addEventListener('visibilitychange', () => {
+          if (document.visibilityState === 'visible') reg.update().catch(() => {});
+        });
+        window.setInterval(() => reg.update().catch(() => {}), 30 * 60 * 1000);
+      },
+    }),
+  );
 }

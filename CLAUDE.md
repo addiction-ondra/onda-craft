@@ -26,6 +26,8 @@ Před commitem vždy: `npm run lint && npm test && npm run build`.
   logiku, render, zvuk a ukládání. React s ním mluví přes `subscribe/getSnapshot`.
 - `src/ui/` – React komponenty bez herní logiky.
 - `src/i18n/cs.ts` – **všechny** texty a hlášky. Žádné řetězce natvrdo v komponentách.
+  Každý nový text patří i do `src/i18n/en.ts` (TypeScript hlídá, že nic nechybí). `CS` je živá vazba
+  na aktuální jazyk – čti ho vždy až při použití (ne do konstanty při načtení modulu).
 
 ## Pravidla obsahu (nepřekročitelná)
 
@@ -73,6 +75,7 @@ Před commitem vždy: `npm run lint && npm test && npm run build`.
 - Frený je ve všech světech (`animals` ve `WorldDef`) a chodí za dětmi (`game/follow.ts`, `followTick`);
   nové světy ho musí mít také. Vlastní akce (domeček, pohlazení) ho zastaví přes `rest()`.
 - Mise se svítícími místy přidávej do `PLAN_MISSIONS`, hledací do `SEARCH` (`missions.ts`) – ovladač je obslouží sám.
+- Minihry s kreslením (tečky, krasobruslení) mají nápovědu při nečinnosti: čekat → zvýraznit → ukázat.
 - Minihry postav: `NPC_GAME` v ovladači (postava → overlay). Hra musí mít ✖, 🔄 a po výhře velké ✔; žádná prohra.
 - Kostlivec a piráti jen přátelští a veselí (žádné lebky se zkříženými hnáty, zbraně, strašení); „lodní bitva“ = barvy.
 - Postavy v novém světě jen vlastní – žádná jména ani vzhled postav z filmů/her (Disney apod.).

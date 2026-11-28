@@ -127,3 +127,18 @@ describe('Pirátský ostrov', () => {
     expect(worldKeys(['island', TREASURE_FOUND, 'ice'])).toEqual(['island', 'ice']);
   });
 });
+
+describe('jazyk hry (uložení v5)', () => {
+  it('uložení v4 se načte, jazyk je čeština; v5 si pamatuje angličtinu', async () => {
+    const { deserialize, serialize } = await import('./storage');
+    const { DEFAULT_SETTINGS } = await import('./settings');
+    const v5 = JSON.parse(JSON.stringify(serialize({ current: 'island', worlds: {}, settings: { ...DEFAULT_SETTINGS, lang: 'en' }, material: null, keys: ['island'] } as never)));
+    expect(v5.version).toBe(5);
+    expect(deserialize(JSON.stringify(v5)).settings.lang).toBe('en');
+    const v4 = { ...v5, version: 4, settings: { ...v5.settings } };
+    delete v4.settings.lang;
+    const loaded = deserialize(JSON.stringify(v4));
+    expect(loaded.settings.lang).toBe('cs');
+    expect(loaded.keys).toEqual(['island']);
+  });
+});

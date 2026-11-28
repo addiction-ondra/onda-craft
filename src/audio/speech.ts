@@ -6,6 +6,8 @@
 export class Speech {
   enabled = true;
   rate = 0.9;
+  /** Jazyk hlasu ('cs' = čeština, 'en' = angličtina). */
+  private lang: 'cs' | 'en' = 'cs';
   private voice: SpeechSynthesisVoice | null = null;
   private readonly synth: SpeechSynthesis | null =
     typeof window !== 'undefined' && 'speechSynthesis' in window ? window.speechSynthesis : null;
@@ -24,13 +26,25 @@ export class Speech {
     return !!this.voice;
   }
 
+  /** Přepne jazyk hlasu (a vybere vhodný hlas zařízení). */
+  setLang(lang: 'cs' | 'en'): void {
+    if (lang === this.lang) return;
+    this.lang = lang;
+    this.stop();
+    this.pickVoice();
+  }
+
   private pickVoice(): void {
     if (!this.synth) return;
     const voices = this.synth.getVoices();
-    const cs = voices.filter((v) => v.lang?.toLowerCase().replace('_', '-').startsWith('cs'));
+    const norm = (v: SpeechSynthesisVoice) => v.lang?.toLowerCase().replace('_', '-') ?? '';
+    const list = voices.filter((v) => norm(v).startsWith(this.lang));
+    // angličtina: nejraději britská, pak jakákoli
+    const pref = this.lang === 'en' ? list.filter((v) => norm(v) === 'en-gb') : list;
+    const pool = pref.length ? pref : list;
     // Preferuj kvalitnější (enhanced/premium) hlasy, pokud jsou nainstalované.
     this.voice =
-      cs.find((v) => /premium|enhanced|vylepšen/i.test(v.name)) ?? cs.find((v) => v.localService) ?? cs[0] ?? null;
+      pool.find((v) => /premium|enhanced|vylepšen/i.test(v.name)) ?? pool.find((v) => v.localService) ?? pool[0] ?? null;
   }
 
   /**
@@ -58,7 +72,7 @@ export class Speech {
   private makeUtterance(text: string, pitch?: number): SpeechSynthesisUtterance {
     if (!this.voice) this.pickVoice();
     const u = new SpeechSynthesisUtterance(text);
-    u.lang = 'cs-CZ';
+    u.lang = this.lang === 'en' ? 'en-GB' : 'cs-CZ';
     if (this.voice) u.voice = this.voice;
     u.rate = this.rate;
     u.pitch = pitch ?? 1.1;

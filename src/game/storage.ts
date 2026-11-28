@@ -14,7 +14,8 @@ export const SAVE_KEY = 'ondacraft:save';
  * 3 – v0.4 (klíče k pokladu, rozestavěná šablona Stavitele); v2 data jsou kompatibilní
  * 4 – v0.7 (více světů: každý svět má vlastní stavbu, úkoly a postavičky; v1–v3 = ostrov)
  */
-export const SAVE_VERSION = 4;
+/** v5: nastavení má jazyk hry (`settings.lang`); světy stejně jako ve v4. */
+export const SAVE_VERSION = 5;
 
 type BlockTuple = [number, number, number, number];
 
@@ -179,14 +180,15 @@ export function deserialize(raw: string | null): LoadedGame {
     return empty;
   }
   const version = data && typeof data === 'object' ? data.version : undefined;
-  if (version !== 1 && version !== 2 && version !== 3 && version !== SAVE_VERSION) {
+  if (version !== 1 && version !== 2 && version !== 3 && version !== 4 && version !== SAVE_VERSION) {
     // Neznámá verze ⇒ zachováme aspoň nastavení.
     return { ...empty, settings: sanitizeSettings(data?.settings) };
   }
 
   const worlds: Partial<Record<WorldId, WorldState>> = {};
   let current: WorldId = 'island';
-  if (version === SAVE_VERSION) {
+  // v4 → v5: stejné světy, jen nastavení dostane jazyk (výchozí čeština – doplní sanitizeSettings)
+  if (version === 4 || version === SAVE_VERSION) {
     const ws = (data.worlds ?? {}) as Record<string, unknown>;
     for (const id of WORLD_IDS) {
       const w = ws[id];

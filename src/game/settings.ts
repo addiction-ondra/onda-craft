@@ -1,4 +1,9 @@
+/** Jazyk hry – vybírají ho děti vlajkou nahoře. */
+export type Lang = 'cs' | 'en';
+
 export interface Settings {
+  /** Jazyk textů a hlasu. */
+  lang: Lang;
   /** Hlasové pokyny (čeština). */
   voice: boolean;
   /** Krátké zvukové efekty. */
@@ -12,6 +17,7 @@ export interface Settings {
 }
 
 export const DEFAULT_SETTINGS: Settings = {
+  lang: 'cs',
   voice: true,
   sounds: true,
   voiceRate: 'slow',
@@ -26,6 +32,7 @@ export function sanitizeSettings(raw: unknown): Settings {
   const s = { ...DEFAULT_SETTINGS };
   if (!raw || typeof raw !== 'object') return s;
   const r = raw as Record<string, unknown>;
+  if (r.lang === 'cs' || r.lang === 'en') s.lang = r.lang;
   if (typeof r.voice === 'boolean') s.voice = r.voice;
   if (typeof r.sounds === 'boolean') s.sounds = r.sounds;
   if (r.voiceRate === 'slow' || r.voiceRate === 'normal') s.voiceRate = r.voiceRate;

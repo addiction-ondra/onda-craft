@@ -6,7 +6,7 @@ import { ParentZone } from './ui/ParentZone';
 import { QuizOverlay } from './ui/QuizOverlay';
 import { TreasureOverlay } from './ui/TreasureOverlay';
 import { WorldsMap } from './ui/WorldsMap';
-import { allMissionsDone, worldKeys } from './game/rewards';
+import { allMissionsDone } from './game/rewards';
 import { WORLDS } from './game/worlds';
 import { TravelOverlay } from './ui/TravelOverlay';
 import { PuzzleGame } from './ui/PuzzleGame';
@@ -14,6 +14,8 @@ import { SlingshotGame } from './ui/SlingshotGame';
 import { MemoryGame } from './ui/MemoryGame';
 import { PaintShipGame } from './ui/PaintShipGame';
 import { DigGame } from './ui/DigGame';
+import { DotsGame } from './ui/DotsGame';
+import { SkateGame } from './ui/SkateGame';
 
 export default function App() {
   const [game] = useState(() => new GameController());
@@ -36,13 +38,15 @@ export default function App() {
       {o?.kind === 'architect' && <ArchitectMenu game={game} ui={ui} noRoom={o.noRoom} />}
       {o?.kind === 'meadowConfirm' && <MeadowConfirm game={game} />}
       {o?.kind === 'worlds' && <WorldsMap game={game} current={ui.worldId} keys={ui.keys} />}
-      {o?.kind === 'treasure' && <TreasureOverlay game={game} keys={worldKeys(ui.keys).length} fresh={o.fresh} allDone={allMissionsDone(ui.completed, ui.worldId)} />}
+      {o?.kind === 'treasure' && <TreasureOverlay game={game} keys={ui.keys} current={ui.worldId} fresh={o.fresh} allDone={allMissionsDone(ui.completed, ui.worldId)} />}
       {o?.kind === 'travel' && <TravelOverlay to={o.to} />}
       {o?.kind === 'puzzle' && <PuzzleGame game={game} />}
       {o?.kind === 'sling' && <SlingshotGame game={game} />}
       {o?.kind === 'memory' && <MemoryGame game={game} />}
       {o?.kind === 'paint' && <PaintShipGame game={game} />}
       {o?.kind === 'dig' && <DigGame game={game} />}
+      {o?.kind === 'skate' && <SkateGame game={game} />}
+      {o?.kind === 'dots' && <DotsGame game={game} />}
       {o?.kind === 'templateDone' && <TemplateDone game={game} template={o.template} />}
       {o?.kind === 'parents' && <ParentZone game={game} ui={ui} />}
       {o?.kind === 'break' && <BreakOverlay game={game} />}

@@ -2,6 +2,8 @@ import type { GameController, UiSnapshot } from '../controller/GameController';
 import { PALETTES } from '../game/blocks';
 import { CHARACTER_IDS } from '../game/characters';
 import { TREASURE_LOCKS, worldKeys } from '../game/rewards';
+import { WORLD_IDS } from '../game/worlds';
+import { FlagCZ, FlagUK } from './Flags';
 import { missionsFor } from '../game/missions';
 import { CS } from '../i18n/cs';
 import { iconFor } from './blockIcons';
@@ -142,15 +144,27 @@ function TopBar({ game, ui }: Props) {
       )}
       <div className="top-right">
         <button className={`keys-btn ${worldKeys(ui.keys).length ? '' : 'empty'}`} aria-label={CS.ui.keys} onClick={() => game.tapKeys()}>
-          {Array.from({ length: TREASURE_LOCKS }, (_, i) => (
-            <span key={i} className={`key-slot ${i < worldKeys(ui.keys).length ? 'have' : ''}`}>
+          {/* jedno místo pro klíč z každého světa (ostrov, Ledové království, Pirátský ostrov) */}
+          {WORLD_IDS.slice(0, TREASURE_LOCKS).map((w) => (
+            <span key={w} className={`key-slot ${ui.keys.includes(w) ? 'have' : ''} ${w === ui.worldId ? 'here' : ''}`} data-world={w}>
               <IconKey />
             </span>
           ))}
         </button>
-        <button className="parent-btn" aria-label={CS.ui.parents} onClick={() => game.openParents()}>
-          <IconGear />
-        </button>
+        <div className="parent-col">
+          <button className="parent-btn" aria-label={CS.ui.parents} onClick={() => game.openParents()}>
+            <IconGear />
+          </button>
+          {/* jazyk hry – děti si ho volí samy ťuknutím na vlajku */}
+          <div className="lang-flags">
+            <button className={`flag-btn ${ui.settings.lang === 'cs' ? 'on' : ''}`} data-lang="cs" aria-label={CS.ui.lang.cs} onClick={() => game.chooseLanguage('cs')}>
+              <FlagCZ />
+            </button>
+            <button className={`flag-btn ${ui.settings.lang === 'en' ? 'on' : ''}`} data-lang="en" aria-label={CS.ui.lang.en} onClick={() => game.chooseLanguage('en')}>
+              <FlagUK />
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );

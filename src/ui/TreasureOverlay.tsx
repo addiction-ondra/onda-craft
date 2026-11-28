@@ -1,11 +1,15 @@
 import { useMemo } from 'react';
 import type { GameController } from '../controller/GameController';
 import { TREASURE_LOCKS } from '../game/rewards';
+import { WORLD_IDS, type WorldId } from '../game/worlds';
 import { CS } from '../i18n/cs';
 import { IconClose, IconFlag, IconKey, IconMap } from './Icons';
 
-/** Truhla s pokladem: tři zámky, v každém zámku jeden klíč za jeden svět. */
-export function TreasureChest({ keys, fresh }: { keys: number; fresh: boolean }) {
+/**
+ * Truhla s pokladem: tři zámky, každý patří jednomu světu (ostrov, Ledové království,
+ * Pirátský ostrov). Klíč se objeví v zámku svého světa.
+ */
+export function TreasureChest({ keys, fresh, current }: { keys: string[]; fresh: boolean; current: WorldId }) {
   const holes = Array.from({ length: TREASURE_LOCKS }, (_, i) => i);
   const xs = [70, 120, 170];
   return (
@@ -21,8 +25,8 @@ export function TreasureChest({ keys, fresh }: { keys: number; fresh: boolean })
       {/* zámková deska se třemi dírkami */}
       <rect x="45" y="104" width="150" height="56" rx="12" fill="#ffd43b" stroke="#b8860b" strokeWidth="4" />
       {holes.map((i) => {
-        const filled = i < keys;
-        const isNew = fresh && i === keys - 1;
+        const filled = keys.includes(WORLD_IDS[i]);
+        const isNew = fresh && WORLD_IDS[i] === current;
         return (
           <g key={i} transform={`translate(${xs[i]} 132)`}>
             {filled ? (
@@ -47,7 +51,7 @@ export function TreasureChest({ keys, fresh }: { keys: number; fresh: boolean })
 
 const CONFETTI = ['#ffd43b', '#ff922b', '#69db7c', '#4dabf7', '#f783ac'];
 
-export function TreasureOverlay({ game, keys, fresh, allDone }: { game: GameController; keys: number; fresh: boolean; allDone: boolean }) {
+export function TreasureOverlay({ game, keys, fresh, allDone, current }: { game: GameController; keys: string[]; fresh: boolean; allDone: boolean; current: WorldId }) {
   const pieces = useMemo(
     () => Array.from({ length: fresh ? 40 : 0 }, (_, i) => ({ left: Math.random() * 100, delay: Math.random(), dur: 2 + Math.random() * 1.5, color: CONFETTI[i % CONFETTI.length] })),
     [fresh],
@@ -70,7 +74,7 @@ export function TreasureOverlay({ game, keys, fresh, allDone }: { game: GameCont
             <IconKey />
           </div>
         )}
-        <TreasureChest keys={keys} fresh={fresh} />
+        <TreasureChest keys={keys} fresh={fresh} current={current} />
         <div className="success-actions">
           {!allDone && (
             <button className="go-btn" aria-label={CS.ui.toMissions} onClick={() => game.openMissions()}>

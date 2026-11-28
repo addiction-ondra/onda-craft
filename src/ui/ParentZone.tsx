@@ -239,6 +239,12 @@ function TestMode({ game, ui }: Props) {
             <button className="text-btn" data-test="memory" onClick={() => game.testOpen('memory')}>
               {t.memory}
             </button>
+            <button className="text-btn" data-test="skate" onClick={() => game.testOpen('skate')}>
+              {t.skate}
+            </button>
+            <button className="text-btn" data-test="dots" onClick={() => game.testOpen('dots')}>
+              {t.dots}
+            </button>
             <button className="text-btn" data-test="dig" onClick={() => game.testOpen('dig')}>
               {t.dig}
             </button>

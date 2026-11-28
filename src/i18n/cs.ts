@@ -1,8 +1,10 @@
 import type { BlockType } from '../game/blocks';
 import type { MissionId } from '../game/missions';
+import type { Lang } from '../game/settings';
+import { EN } from './en';
 
 /** Všechny texty a hlasové hlášky hry. Krátké věty, jednoduchá slova. */
-export const CS = {
+const cs = {
   appName: 'Ondra a Laura Craft',
 
   blockNames: {
@@ -317,6 +319,18 @@ export const CS = {
       hit: ['Bum!', 'Prásk!', 'Paráda!', 'Trefa!'],
       done: 'Hurá! Hrad je zbouraný! Ťukni na zelenou fajfku a jdeme zpátky.',
     },
+    penguin: {
+      name: 'Tučňák Pepík',
+      tapNeedsFriend: 'Tučňák Pepík chce bruslit! Pošli k němu Ondru nebo Lauru.',
+      hello: 'Ahoj! Já jsem tučňák Pepík a moc rád krasobruslím! Nakresli mi na led obrázek – obtáhni tečky prstem – a já ho objedu!',
+      done: 'Jůůů! To bylo krásné bruslení! Děkuju, kamarádi!',
+    },
+    xmasTree: {
+      name: 'Vánoční stromeček',
+      tapNeedsFriend: 'U stromečku je hra! Pošli k němu Ondru nebo Lauru.',
+      hello: 'Vánoční stromeček má pro tebe hru: spoj tečky podle obrázku!',
+      done: 'Hurá! Všechny obrázky jsou hotové. Stromeček se rozsvítil!',
+    },
     pirate: {
       name: 'Pirát Fousek',
       tapNeedsFriend: 'Pirát Fousek tě volá! Pošli k němu Ondru nebo Lauru.',
@@ -339,6 +353,26 @@ export const CS = {
     pair: ['Stejné!', 'Dvojice!', 'Výborně!'],
     again: 'Tyhle nejsou stejné. Zkus to znovu!',
     names: { parrot: 'Papoušek', anchor: 'Kotva', shell: 'Mušle', crab: 'Krab', palm: 'Palma', fish: 'Rybička' } as Record<string, string>,
+  },
+
+  /** Spoj tečky podle vzoru (vánoční stromeček). */
+  dots: {
+    start: 'Podívej se na obrázek vlevo. Nakresli prstem stejné čáry na tečky vpravo.',
+    hint1: 'Podívej, tyhle tečky svítí. Spoj je čárou, jako na obrázku vlevo.',
+    hint2: 'Podívej, ukážu ti to. Pak to zkus ty!',
+    wrong: 'Tahle čára na obrázku není. Zkus jinou tečku.',
+    levelDone: ['Hotovo! Další obrázek.', 'Výborně! Jdeme dál.', 'Paráda! Další.', 'Skvělé! Ještě jeden.'],
+    next: 'Další obrázek',
+  },
+
+  /** Krasobruslení tučňáka Pepíka. */
+  skate: {
+    start: 'Obtáhni prstem tečky na ledě. Pepík pak obrázek objede na bruslích!',
+    hint1: 'Začni u blikající tečky a jeď prstem po tečkách dokola.',
+    hint2: 'Podívej, takhle Pepík pojede. Teď to zkus ty!',
+    names: { circle: 'Kruh!', square: 'Čtverec!', triangle: 'Trojúhelník!', heart: 'Srdíčko!', star: 'Hvězda!' } as Record<string, string>,
+    skating: 'Pepík krasobruslí!',
+    next: 'Další obrázek',
   },
 
   /** Barevná lodní bitva piráta Fouska. */
@@ -476,6 +510,7 @@ export const CS = {
     breakTitle: 'Pauza?',
     breakOk: 'Dobře',
     rotateHint: 'Otoč zařízení',
+    lang: { cs: 'Čeština', en: 'English', hello: 'Mluvíme česky! Ahoj!' },
     test: {
       button: '🧪 Testovací režim',
       hide: '🧪 Skrýt testovací režim',
@@ -488,9 +523,24 @@ export const CS = {
       paint: '🎨 Barevná lodní bitva (pirát)',
       memory: '🃏 Pexeso (kostlivec)',
       dig: '⛏️ Kopání pokladu',
+      skate: '⛸️ Krasobruslení (tučňák)',
+      dots: '🎄 Spoj tečky (stromeček)',
       travel: '⛵ Plavba lodičkou',
     },
   },
 };
 
-export type Strings = typeof CS;
+export type Strings = typeof cs;
+
+/**
+ * Aktuální slovník. Živá vazba (export let): po `setLanguage` všechny moduly
+ * při dalším čtení `CS.…` dostanou nový jazyk.
+ */
+export let CS: Strings = cs;
+export let LANG: Lang = 'cs';
+
+export function setLanguage(lang: Lang): void {
+  LANG = lang;
+  CS = lang === 'en' ? EN : cs;
+  if (typeof document !== 'undefined') document.documentElement.lang = lang;
+}

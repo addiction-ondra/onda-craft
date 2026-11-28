@@ -2548,3 +2548,170 @@ h3 {
     opacity: 1;
   }
 }
+
+/* ------------------------------------------------------------ Ledové království: tučňák a stromeček */
+
+.dots-card,
+.skate-card {
+  width: min(760px, 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding-top: 64px;
+  touch-action: none;
+}
+
+.dots-progress {
+  display: flex;
+  gap: 8px;
+}
+
+.dots-step {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #dee2e6;
+}
+
+.dots-step.now {
+  background: #74c0fc;
+  box-shadow: 0 0 0 4px #d0ebff;
+}
+
+.dots-step.done {
+  background: #51cf66;
+}
+
+.dots-panels {
+  display: flex;
+  gap: 0;
+  justify-content: center;
+}
+
+.dots-panel {
+  height: min(52vh, 430px);
+  width: auto;
+  aspect-ratio: 2 / 3;
+  touch-action: none;
+}
+
+.dots-panel.draw {
+  cursor: crosshair;
+}
+
+.dots-glow {
+  animation: dots-pulse 1s ease-in-out infinite;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+@keyframes dots-pulse {
+  0%,
+  100% {
+    transform: scale(0.8);
+    opacity: 0.4;
+  }
+  50% {
+    transform: scale(1.15);
+    opacity: 0.9;
+  }
+}
+
+.dots-demo {
+  animation: dots-draw 0.8s ease-out forwards;
+}
+
+@keyframes dots-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.skate-rink {
+  width: min(100%, calc(100vh - 250px));
+  aspect-ratio: 1;
+  touch-action: none;
+}
+
+.skate-start {
+  animation: dots-pulse 0.9s ease-in-out infinite;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dots-glow,
+  .skate-start {
+    animation: none;
+  }
+  .dots-demo {
+    animation-duration: 0.01s;
+  }
+}
+
+/* klíč aktuálního světa – jemné podtržení, ať dítě ví, který klíč tady sbírá */
+.key-slot.here {
+  box-shadow: inset 0 -4px 0 #ffd43b;
+  border-radius: 10px;
+}
+
+/* ------------------------------------------------------------ výběr jazyka (vlajky) */
+
+.parent-col {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+}
+
+.lang-flags {
+  display: flex;
+  gap: 6px;
+}
+
+.flag-btn {
+  width: 46px;
+  height: 46px;
+  padding: 0;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow:
+    0 0 0 3px rgba(255, 255, 255, 0.9),
+    0 3px 6px rgba(0, 0, 0, 0.2);
+  opacity: 0.75;
+  transition: transform 0.15s;
+}
+
+.flag-btn svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.flag-btn.on {
+  opacity: 1;
+  box-shadow:
+    0 0 0 4px #fab005,
+    0 3px 6px rgba(0, 0, 0, 0.25);
+  transform: scale(1.08);
+}
+
+/* telefon na šířku: pod ikonou není místo (pravý sloupec tlačítek) – vlajky vedle ní */
+@media (max-height: 480px) {
+  .parent-col {
+    flex-direction: row-reverse;
+    align-items: center;
+  }
+  .flag-btn {
+    width: 40px;
+    height: 40px;
+  }
+}
+
+/* telefon na šířku: pravý sloupec režimů sahá až nahoru – klíče, rodiče a vlajky posunout vlevo od něj */
+@media (max-height: 480px) {
+  .top-right {
+    margin-right: calc(var(--btn) + var(--gap));
+  }
+}

@@ -372,6 +372,8 @@ async function ipadFlow() {
       o: c.characters.get('ondra').standCell,
       ow: c.characters.get('ondra').walking,
       ov: c.getSnapshot().overlay?.kind ?? null,
+      pet: c.lastPetAt,
+      dog: window.__onda.view.animals.find((a) => a.kind === 'dog')?.standCell,
       boxes: [...w.entries()].filter(([, t]) => t === 'question').map(([k]) => k),
     };
   });
@@ -802,6 +804,78 @@ async function iceFlow() {
   await page.locator('.sling-done').click();
   ok(!(await snap(page)).overlay, 'prak: ✔ vrátí zpět do světa');
 
+  // TUČŇÁK PEPÍK: krasobruslení – obtáhnout tečkovaný tvar
+  await page.getByRole('button', { name: 'Ondra' }).click();
+  if ((await snap(page)).selectedCharacter !== 'ondra') await page.evaluate(() => window.__onda.controller.selectCharacter('ondra', true));
+  ok(await tapCreature(page, 'penguin'), 'na tučňáka Pepíka jde ťuknout');
+  await page.waitForFunction(() => window.__onda.controller.getSnapshot().overlay?.kind === 'skate', null, { timeout: 120000 }).catch(() => {});
+  ok((await snap(page)).overlay?.kind === 'skate', 'Ondra došel k tučňákovi a otevřelo se krasobruslení');
+  const rink = await page.locator('.skate-rink').boundingBox();
+  const rp = (x, y) => ({ x: rink.x + (x / 100) * rink.width, y: rink.y + (y / 100) * rink.height });
+  // ťuknutí doprostřed nic nesplní
+  await page.mouse.click(rp(50, 50).x, rp(50, 50).y);
+  ok((await page.locator('.skate-rink').getAttribute('data-phase')) === 'trace', 'krasobruslení: ťuknutí mimo tečky nic nepokazí');
+  // obtažení kruhu prstem
+  const s0 = rp(50 + 32 * Math.cos(-Math.PI / 2), 50 + 32 * Math.sin(-Math.PI / 2));
+  await page.mouse.move(s0.x, s0.y);
+  await page.mouse.down();
+  for (let i = 1; i <= 64; i++) {
+    const a = -Math.PI / 2 + (i / 64) * Math.PI * 2;
+    const q = rp(50 + 32 * Math.cos(a), 50 + 32 * Math.sin(a));
+    await page.mouse.move(q.x, q.y, { steps: 2 });
+  }
+  await page.mouse.up();
+  ok(['skate', 'shapeDone'].includes(await page.locator('.skate-rink').getAttribute('data-phase')), 'krasobruslení: obtažený kruh → Pepík bruslí');
+  await sleep(600);
+  await page.screenshot({ path: `${OUT}/51-skate.png` });
+  await page.waitForSelector('.skate-next', { timeout: 8000 }).catch(() => {});
+  ok(await page.locator('.skate-next').isVisible(), 'krasobruslení: po jízdě velké ▶ na další obrázek');
+  await page.locator('.skate-next').click();
+  ok((await page.locator('.skate-rink').getAttribute('data-shape')) === 'square', 'krasobruslení: další tvar je čtverec');
+  await page.getByRole('button', { name: 'Zavřít' }).click();
+
+  // VÁNOČNÍ STROMEČEK: spoj tečky podle vzoru (8 úrovní)
+  await page.getByRole('button', { name: 'Laura' }).click();
+  if ((await snap(page)).selectedCharacter !== 'lauriska') await page.evaluate(() => window.__onda.controller.selectCharacter('lauriska', true));
+  ok(await tapCreature(page, 'xmasTree'), 'na vánoční stromeček jde ťuknout');
+  await page.waitForFunction(() => window.__onda.controller.getSnapshot().overlay?.kind === 'dots', null, { timeout: 120000 }).catch(() => {});
+  ok((await snap(page)).overlay?.kind === 'dots', 'Laura došla ke stromečku a otevřelo se spojování teček');
+  await page.screenshot({ path: `${OUT}/52-dots.png` });
+  // nápověda: po chvíli nečinnosti se rozsvítí tečky, které se mají spojit
+  await sleep(9000);
+  ok((await page.locator('.dots-glow').count()) > 0, 'tečky: po chvíli nečinnosti se rozsvítí tečky ke spojení');
+  await page.screenshot({ path: `${OUT}/53-dots-hint.png` });
+  const drawLine = async (box, a, b) => {
+    const p = (v) => ({ x: box.x + (v[0] / 200) * box.width, y: box.y + (v[1] / 300) * box.height });
+    const A = p(a);
+    const B = p(b);
+    await page.mouse.move(A.x, A.y);
+    await page.mouse.down();
+    await page.mouse.move(B.x, B.y, { steps: 8 });
+    await page.mouse.up();
+  };
+  // špatná čára se nepřijme
+  let box = await page.locator('.dots-panel.draw').boundingBox();
+  await drawLine(box, [50, 50], [150, 50]);
+  ok((await page.locator('.dots-panel.draw > line[stroke="#e03131"]').count()) === 0, 'tečky: čára, která na obrázku není, se nepřijme (bez trestu)');
+  for (let lvl = 1; lvl <= 8; lvl++) {
+    await page.waitForFunction((l) => document.querySelector('.dots-panels')?.getAttribute('data-level') === String(l), lvl, { timeout: 5000 }).catch(() => {});
+    box = await page.locator('.dots-panel.draw').boundingBox();
+    const lines = await page.locator('.dots-panel.pattern line').evaluateAll((els) =>
+      els.map((e) => [
+        [+e.getAttribute('x1'), +e.getAttribute('y1')],
+        [+e.getAttribute('x2'), +e.getAttribute('y2')],
+      ]),
+    );
+    for (const [a, b] of lines) await drawLine(box, a, b);
+    if (lvl === 2) await page.screenshot({ path: `${OUT}/54-dots-level2.png` });
+    await sleep(lvl < 8 ? 1900 : 1200);
+  }
+  ok(await page.locator('.sling-done').isVisible(), 'tečky: všech 8 obrázků hotových – velké ✔');
+  await page.screenshot({ path: `${OUT}/55-dots-done.png` });
+  await page.locator('.sling-done').click();
+  ok(!(await snap(page)).overlay, 'tečky: ✔ vrátí zpět do světa');
+
 
   // zpět na ostrov přes mapu
   await page.locator('.mode-col').getByRole('button', { name: 'Mapa světů' }).click();
@@ -811,7 +885,7 @@ async function iceFlow() {
   s = await snap(page);
   ok(s.worldId === 'island', 'přes mapu se dá doplout zpátky na ostrov');
   const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('ondacraft:save')));
-  ok(saved.version === 4 && saved.worlds.ice?.completed.includes('snowman') && saved.current === 'island', 'oba světy se ukládají zvlášť (sněhulák zůstal v Ledovém království)');
+  ok(saved.version === 5 && saved.worlds.ice?.completed.includes('snowman') && saved.current === 'island', 'oba světy se ukládají zvlášť (sněhulák zůstal v Ledovém království)');
   ok(errors.length === 0, `bez chyb v konzoli${errors.length ? ': ' + errors.join(' | ') : ''}`);
   await ctx.close();
 }
@@ -834,6 +908,7 @@ async function testModeFlow() {
   };
   await openTestPanel();
   await page.screenshot({ path: `${OUT}/60-test-mode.png` });
+  ok((await page.locator('[data-test-world]').count()) === 3 && (await page.locator('[data-test-world=pirate]').isVisible()), 'testovací režim: skok na všechny 3 světy včetně Pirátského ostrova');
   await page.locator('[data-test-world=ice]').click();
   await page.waitForFunction(() => window.__onda.controller.getSnapshot().worldId === 'ice', null, { timeout: 10000 }).catch(() => {});
   let s = await snap(page);
@@ -854,6 +929,11 @@ async function testModeFlow() {
   await page.locator('[data-test=complete]').click();
   s = await snap(page);
   ok(s.completed.length === 5 && s.keys.includes('ice') && s.overlay?.kind === 'treasure', 'test: splnit vše → klíč a truhla');
+  ok(
+    (await page.locator('.key-slot[data-world=ice].have').count()) === 1 && (await page.locator('.key-slot[data-world=island].have').count()) === 0,
+    'klíč z Ledového království je nahoře na svém místě (prostřední)',
+  );
+  ok((await page.locator('.chest .key-in').count()) === 1, 'klíč je v truhle v zámku');
   ok(!!(await page.evaluate(() => window.__onda.controller.boat)), 'test: po splnění je na vodě lodička');
   await page.getByRole('button', { name: 'Zavřít' }).first().click().catch(() => {});
   await page.evaluate(() => window.__onda.controller.closeOverlay());
@@ -862,6 +942,22 @@ async function testModeFlow() {
   ok((await snap(page)).overlay?.kind === 'travel', 'test: plavba lodičkou');
   await page.waitForFunction(() => window.__onda.controller.getSnapshot().worldId === 'island' && !window.__onda.controller.getSnapshot().overlay, null, { timeout: 20000 }).catch(() => {});
   ok((await snap(page)).worldId === 'island', 'test: plavba dovezla zpět na ostrov');
+
+  // JAZYK: vlajky pod rodičovskou ikonou
+  await page.locator('[data-lang=en]').click();
+  await sleep(300);
+  ok(
+    (await snap(page)).settings.lang === 'en' && (await page.evaluate(() => document.documentElement.lang)) === 'en' && (await page.getByRole('button', { name: 'World map' }).count()) > 0,
+    'anglická vlajka přepne hru do angličtiny',
+  );
+  await page.screenshot({ path: `${OUT}/61-english.png` });
+  await page.reload();
+  await page.waitForFunction(() => !!window.__onda);
+  ok(await page.getByRole('button', { name: 'Play' }).isVisible(), 'angličtina zůstane i po obnovení stránky');
+  await page.getByRole('button', { name: 'Play' }).click();
+  await page.locator('[data-lang=cs]').click();
+  await sleep(300);
+  ok((await snap(page)).settings.lang === 'cs' && (await page.getByRole('button', { name: 'Mapa světů' }).count()) > 0, 'česká vlajka vrátí češtinu');
   ok(errors.length === 0, `bez chyb v konzoli${errors.length ? ': ' + errors.join(' | ') : ''}`);
   await ctx.close();
 }
@@ -1033,6 +1129,8 @@ async function pirateFlow() {
 try {
   if (process.env.ONLY === 'test') {
     await testModeFlow();
+  } else if (process.env.ONLY === 'island') {
+    await ipadFlow();
   } else if (process.env.ONLY === 'pirate') {
     await pirateFlow();
   } else {

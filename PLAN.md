@@ -170,5 +170,8 @@ se do `keys` uloží značka `treasure` (formát uložení se nemění, počet k
 - **v0.8** – **Pirátský ostrov** (sudy, pirátská loď mimo ostrov, 5 misí: mince, stožár, vlajky, čtverec, molo;
   kostlivec Kostík s pexesem, pirát Fousek s barevnou lodní bitvou; červené X a kopání velkého pokladu
   se všemi třemi klíči). ✅
+- **v0.9** – angličtina (vlajky, `i18n/en.ts`, uložení v5 s `settings.lang`), klíče podle světů,
+  v Ledovém království tučňák (krasobruslení – obtahování tvarů, `game/skate.ts`) a vánoční stromeček
+  (spoj tečky podle vzoru, 8 úrovní, třístupňová nápověda, `game/dots.ts`). ✅
 - **v0.8** – mise 8 (písmena z kostek, začáteční hlásky), více světů / slotů pro sourozence.
 - Průběžně: přístupnost (větší kontrast), výkon na starších iPadech, nahrané lidské hlasy jako fallback.

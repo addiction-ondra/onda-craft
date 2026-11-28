@@ -104,7 +104,7 @@ describe('ukládání v0.2', () => {
       serialize({ world: w, activeMission: null, completed: [], settings: DEFAULT_SETTINGS, material: 'wood', characters: [{ id: 'ondra', pos: courtyard }] }),
     );
     const loaded = deserialize(raw);
-    expect(SAVE_VERSION).toBe(4);
+    expect(SAVE_VERSION).toBe(5);
     expect(loaded.characters).toEqual([{ id: 'ondra', pos: courtyard }]);
   });
 

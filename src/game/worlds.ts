@@ -25,8 +25,9 @@ export const WORLD_IDS: WorldId[] = ['island', 'ice', 'pirate'];
 export const isWorldId = (v: unknown): v is WorldId => v === 'island' || v === 'ice' || v === 'pirate';
 
 export type AnimalSpec = { kind: 'dog' | 'sheep' | 'chick'; pos: Vec3 };
-export type NpcKind = 'princess' | 'snowman' | 'pirate' | 'skeleton';
-export type NpcSpec = { kind: NpcKind; pos: Vec3 };
+export type NpcKind = 'princess' | 'snowman' | 'pirate' | 'skeleton' | 'penguin' | 'xmasTree';
+/** `face` = kam se postava dívá (dx, dz); výchozí na západ (−x). */
+export type NpcSpec = { kind: NpcKind; pos: Vec3; face?: [number, number] };
 
 export interface WorldDef {
   id: WorldId;
@@ -252,8 +253,13 @@ export const WORLDS: Record<WorldId, WorldDef> = {
     // Frený jezdí s dětmi do všech světů
     animals: [{ kind: 'dog', pos: { x: 3, y: 1, z: 3 } }],
     npcs: [
-      { kind: 'princess', pos: { x: 15, y: 1, z: 12 } },
+      // princezna stojí zády k hradu – čelem k dětem
+      { kind: 'princess', pos: { x: 15, y: 1, z: 12 }, face: [1, 0] },
       { kind: 'snowman', pos: { x: 8, y: 1, z: 15 } },
+      // tučňák bruslí na zamrzlém jezeře
+      { kind: 'penguin', pos: { x: 11, y: 1, z: 2 }, face: [1, 1] },
+      // vánoční stromeček na okraji (nic ho z kamery nezakryje)
+      { kind: 'xmasTree', pos: { x: 15, y: 1, z: 9 } },
     ],
     boat: { water: { x: 2, y: 1, z: 0 }, stand: { x: 2, y: 1, z: 1 } },
     castle: ICE_CASTLE,

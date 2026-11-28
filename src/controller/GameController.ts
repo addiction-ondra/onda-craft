@@ -37,7 +37,7 @@ import {
   type Vec3,
   type World,
 } from '../game/world';
-import { CS } from '../i18n/cs';
+import { CS, setLanguage } from '../i18n/cs';
 import { SceneView } from '../render/SceneView';
 import type { Animal, AnimalKind } from '../render/animals';
 import { areNeighbors, CHARACTER_IDS, pickDialogIndex, resolveCharacterPos, type CharacterId, type CharacterState } from '../game/characters';
@@ -57,7 +57,7 @@ export type Mode = 'build' | 'erase';
 export type PlayMode = 'walk' | 'build' | 'architect';
 
 /** Postavy s minihrou a jejich hra (vyskakovací okno). */
-export const NPC_GAME = { princess: 'puzzle', snowman: 'sling', pirate: 'paint', skeleton: 'memory' } as const;
+export const NPC_GAME = { princess: 'puzzle', snowman: 'sling', pirate: 'paint', skeleton: 'memory', penguin: 'skate', xmasTree: 'dots' } as const;
 export type GameNpc = keyof typeof NPC_GAME;
 const GAME_NPCS = Object.keys(NPC_GAME) as GameNpc[];
 export const isGameNpc = (k: string): k is GameNpc => k in NPC_GAME;
@@ -75,6 +75,8 @@ export type Overlay =
   | { kind: 'sling' }
   | { kind: 'paint' }
   | { kind: 'memory' }
+  | { kind: 'skate' }
+  | { kind: 'dots' }
   | { kind: 'dig' }
   | { kind: 'templateDone'; template: TemplateId }
   | { kind: 'missions' }
@@ -258,7 +260,8 @@ export class GameController {
     this.npcs.clear();
     for (const n of def.npcs) {
       const npc = view.addAnimal(n.kind, n.pos);
-      npc.faceTowards({ x: n.pos.x - 1, y: 1, z: n.pos.z }); // čelem ke středu ostrova
+      const [fx, fz] = n.face ?? [-1, 0]; // výchozí: čelem ke středu ostrova
+      npc.faceTowards({ x: n.pos.x + fx, y: 1, z: n.pos.z + fz });
       this.npcs.set(n.kind, npc);
     }
     // postavy s hrou mají nad hlavou „!!“
@@ -733,10 +736,27 @@ export class GameController {
   }
 
   private applySettings(s: Settings): void {
+    setLanguage(s.lang);
+    this.speech.setLang(s.lang);
     this.speech.enabled = s.voice;
     this.speech.rate = s.voiceRate === 'slow' ? 0.85 : 1;
     this.sfx.enabled = s.sounds;
     if (!s.voice) this.speech.stop();
+  }
+
+  /** Vlajka nahoře: děti si samy vyberou jazyk hry (čeština / angličtina). */
+  chooseLanguage(lang: Settings['lang']): void {
+    this.markActivity();
+    this.speech.unlock();
+    if (lang === this.snapshot.settings.lang) {
+      this.sfx.play('click');
+      this.say(CS.ui.lang.hello);
+      return;
+    }
+    this.updateSettings({ lang });
+    this.sfx.play('success');
+    this.say(CS.ui.lang.hello);
+    this.set({ hasCzechVoice: this.speech.hasCzechVoice });
   }
 
   testVoice(): void {
@@ -799,12 +819,12 @@ export class GameController {
   }
 
   /** Test: rovnou otevřít minihru / kvíz / plavbu. */
-  testOpen(what: 'puzzle' | 'sling' | 'paint' | 'memory' | 'dig' | 'quiz' | 'travel'): void {
+  testOpen(what: 'puzzle' | 'sling' | 'paint' | 'memory' | 'skate' | 'dots' | 'dig' | 'quiz' | 'travel'): void {
     this.set({ overlay: null });
     if (what === 'dig') {
       this.set({ overlay: { kind: 'dig' } });
       this.say(CS.dig.start);
-    } else if (what === 'puzzle' || what === 'sling' || what === 'paint' || what === 'memory') {
+    } else if (what === 'puzzle' || what === 'sling' || what === 'paint' || what === 'memory' || what === 'skate' || what === 'dots') {
       const npc = (Object.keys(NPC_GAME) as GameNpc[]).find((k) => NPC_GAME[k] === what)!;
       this.set({ overlay: { kind: what } });
       this.say(CS.npcs[npc].hello);

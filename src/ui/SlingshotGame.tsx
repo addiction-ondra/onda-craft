@@ -12,7 +12,8 @@ const H = 500;
 const GROUND = 450;
 const SLING = { x: 160, y: 340 };
 const MAX_PULL = 115;
-const POWER = 8.2;
+/** Síla praku – s rezervou dostřelí i na nejvzdálenější hrad. */
+const POWER = 10.5;
 const GRAV = 1400;
 const B = 40; // velikost kostky hradu
 
@@ -38,22 +39,79 @@ interface Shot {
   rest: number;
 }
 
-function buildCastle(): Block[] {
-  const cells: Array<[number, number, boolean]> = [];
-  // dvě věže po 3 kostkách, mezi nimi zeď 2 vysoká, nahoře most a krystaly
-  for (let r = 0; r < 3; r++) {
-    cells.push([0, r, false]);
-    cells.push([4, r, false]);
-  }
-  for (let c = 1; c <= 3; c++) for (let r = 0; r < 2; r++) cells.push([c, r, false]);
-  for (let c = 0; c <= 4; c++) cells.push([c, 3, false]);
-  cells.push([0, 4, true], [2, 4, true], [4, 4, true]);
-  const x0 = 590;
+type Cell = [col: number, row: number, crystal: boolean];
+
+/** Tři hrady na výběr: malý, střední, velký (sloupec, řada od země, krystal). */
+export const SLING_LEVELS: Array<{ x0: number; cells: Cell[] }> = [
+  {
+    // malý: 3×2 a krystal nahoře
+    x0: 600,
+    cells: [
+      [0, 0, false],
+      [1, 0, false],
+      [2, 0, false],
+      [0, 1, false],
+      [1, 1, false],
+      [2, 1, false],
+      [1, 2, true],
+    ],
+  },
+  {
+    // střední: dvě věže, zeď, most a krystaly
+    x0: 590,
+    cells: (() => {
+      const c: Cell[] = [];
+      for (let r = 0; r < 3; r++) c.push([0, r, false], [4, r, false]);
+      for (let x = 1; x <= 3; x++) for (let r = 0; r < 2; r++) c.push([x, r, false]);
+      for (let x = 0; x <= 4; x++) c.push([x, 3, false]);
+      c.push([0, 4, true], [2, 4, true], [4, 4, true]);
+      return c;
+    })(),
+  },
+  {
+    // velký: strážní věž vpředu a velký hrad za ní
+    x0: 500,
+    cells: (() => {
+      const c: Cell[] = [];
+      for (let r = 0; r < 3; r++) c.push([0, r, false], [1, r, false]);
+      c.push([0, 3, true], [1, 3, true]);
+      for (let r = 0; r < 4; r++) c.push([4, r, false], [8, r, false]);
+      for (let x = 5; x <= 7; x++) for (let r = 0; r < 3; r++) c.push([x, r, false]);
+      c.push([5, 3, false], [6, 3, false], [7, 3, false]);
+      for (let x = 4; x <= 8; x++) c.push([x, 4, false]);
+      c.push([4, 5, true], [6, 5, true], [8, 5, true]);
+      return c;
+    })(),
+  },
+];
+
+function buildCastle(level: number): Block[] {
+  const { x0, cells } = SLING_LEVELS[level];
   return cells.map(([c, r, crystal]) => {
     const x = x0 + c * B + B / 2;
     const y = GROUND - r * B - B / 2;
     return { x, y, ox: x, oy: y, vx: 0, vy: 0, rot: 0, vr: 0, awake: false, crystal };
   });
+}
+
+/** Malý náhled hradu na tlačítku výběru (bez čtení – dítě pozná velikost). */
+function LevelPreview({ level }: { level: number }) {
+  const { cells } = SLING_LEVELS[level];
+  const cols = Math.max(...cells.map((c) => c[0])) + 1;
+  // jednotná velikost kostky pro všechny náhledy (aby byl vidět rozdíl velikosti hradů)
+  const size = 100 / 9;
+  const ASPECT = 1.3;
+  return (
+    <span className="sling-preview" aria-hidden>
+      {cells.map(([c, r, crystal], i) => (
+        <i
+          key={i}
+          className={crystal ? 'crystal' : ''}
+          style={{ left: `${50 + (c - cols / 2) * size}%`, bottom: `${r * size * ASPECT}%`, width: `${size}%`, height: `${size * ASPECT}%` }}
+        />
+      ))}
+    </span>
+  );
 }
 
 const knocked = (b: Block) => Math.hypot(b.x - b.ox, b.y - b.oy) > 25 || Math.abs(b.rot) > 0.35;
@@ -62,8 +120,10 @@ export function SlingshotGame({ game }: { game: GameController }) {
   const canvas = useRef<HTMLCanvasElement>(null);
   const [won, setWon] = useState(false);
   const [round, setRound] = useState(0);
-  const state = useRef<{ blocks: Block[]; shot: Shot; drag: boolean; won: boolean; lastBoom: number }>({
-    blocks: buildCastle(),
+  const [level, setLevel] = useState<number | null>(null);
+  const state = useRef<{ blocks: Block[]; shot: Shot; drag: boolean; won: boolean; lastBoom: number; level: number }>({
+    blocks: buildCastle(0),
+    level: 0,
     shot: { x: SLING.x, y: SLING.y, vx: 0, vy: 0, flying: false, rest: 0 },
     drag: false,
     won: false,
@@ -71,20 +131,30 @@ export function SlingshotGame({ game }: { game: GameController }) {
   });
 
   useEffect(() => {
-    game.sayLine(CS.npcs.snowman.shoot);
+    game.sayLine(CS.sling.pick);
     // pro automatické testy (?test): přístup ke stavu hry
     if (new URLSearchParams(location.search).has('test')) (window as unknown as Record<string, unknown>).__sling = state.current;
   }, [game]);
 
-  // nová hra (postavit znovu)
+  // nová hra (vybraný hrad / postavit znovu)
   useEffect(() => {
-    state.current.blocks = buildCastle();
+    if (level === null) return;
+    state.current.level = level;
+    state.current.blocks = buildCastle(level);
     state.current.shot = { x: SLING.x, y: SLING.y, vx: 0, vy: 0, flying: false, rest: 0 };
     state.current.won = false;
     setWon(false);
-  }, [round]);
+  }, [round, level]);
+
+  const pick = (l: number) => {
+    game.playSfx('click');
+    game.sayLine(CS.npcs.snowman.shoot);
+    setLevel(l);
+    setRound((r) => r + 1);
+  };
 
   useEffect(() => {
+    if (level === null) return;
     const cv = canvas.current!;
     const g = cv.getContext('2d')!;
     let raf = 0;
@@ -209,6 +279,15 @@ export function SlingshotGame({ game }: { game: GameController }) {
         }
         if (b.x < -60 || b.x > W + 60) b.vx = 0;
       }
+      // po výhře se zbytek hradu sám sesype – spadne opravdu všechno
+      if (s.won)
+        for (const b of s.blocks)
+          if (!knocked(b) && Math.abs(b.vx) < 5 && Math.abs(b.vy) < 5) {
+            b.awake = true;
+            b.vx = 160 + Math.random() * 220;
+            b.vy = -280 - Math.random() * 160;
+            b.vr = 3 + Math.random() * 5;
+          }
       // vyhráno? (většina hradu je dole)
       if (!s.won && s.blocks.filter(knocked).length >= s.blocks.length * 0.7) {
         s.won = true;
@@ -276,7 +355,7 @@ export function SlingshotGame({ game }: { game: GameController }) {
           let vx = (SLING.x - sh.x) * POWER;
           let vy = (SLING.y - sh.y) * POWER;
           g.fillStyle = 'rgba(255,255,255,0.9)';
-          for (let i = 0; i < 18; i++) {
+          for (let i = 0; i < 22; i++) {
             for (let k = 0; k < 4; k++) {
               vy += GRAV * 0.012;
               px += vx * 0.012;
@@ -335,7 +414,7 @@ export function SlingshotGame({ game }: { game: GameController }) {
       cv.removeEventListener('pointerup', onUp);
       cv.removeEventListener('pointercancel', onUp);
     };
-  }, [game]);
+  }, [game, level === null]);
 
   return (
     <div className="overlay dim">
@@ -346,19 +425,44 @@ export function SlingshotGame({ game }: { game: GameController }) {
         <div className="puzzle-head" aria-hidden>
           ⛄🎯
         </div>
-        <canvas ref={canvas} width={W} height={H} className="sling-canvas" />
-        <div className="success-actions">
-          <button className="go-btn secondary" aria-label={CS.sling.again} onClick={() => setRound((r) => r + 1)}>
-            🔄
-          </button>
-          {won && (
-            <span className="sling-won" aria-hidden>
-              <IconStar width="56" height="56" />
-              <IconStar width="56" height="56" />
-              <IconStar width="56" height="56" />
-            </span>
-          )}
-        </div>
+        {level === null ? (
+          <div className="sling-levels">
+            {SLING_LEVELS.map((_, i) => (
+              <button key={i} className="sling-level" data-level={i + 1} aria-label={CS.sling.levels[i]} onClick={() => pick(i)}>
+                <LevelPreview level={i} />
+                <span className="sling-level-stars" aria-hidden>
+                  {Array.from({ length: i + 1 }, (_, k) => (
+                    <IconStar key={k} width="28" height="28" />
+                  ))}
+                </span>
+              </button>
+            ))}
+          </div>
+        ) : (
+          <>
+            <canvas ref={canvas} width={W} height={H} className="sling-canvas" />
+            <div className="success-actions">
+              <button className="go-btn secondary" aria-label={CS.sling.levelsTitle} onClick={() => setLevel(null)}>
+                🏰
+              </button>
+              <button className="go-btn secondary" aria-label={CS.sling.again} onClick={() => setRound((r) => r + 1)}>
+                🔄
+              </button>
+              {won && (
+                <>
+                  <span className="sling-won" aria-hidden>
+                    <IconStar width="56" height="56" />
+                    <IconStar width="56" height="56" />
+                    <IconStar width="56" height="56" />
+                  </span>
+                  <button className="go-btn sling-done" aria-label={CS.sling.done} onClick={() => game.closeOverlay()}>
+                    ✔
+                  </button>
+                </>
+              )}
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

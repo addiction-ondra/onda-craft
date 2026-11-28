@@ -11,6 +11,12 @@ ovečkou a kuřátkem. Ovládání dotykem, minimum textu, české hlasové poky
 
 Architektura a roadmapa: [PLAN.md](PLAN.md) · pravidla vývoje: [CLAUDE.md](CLAUDE.md)
 
+## Co umí verze 0.7.2
+
+- Prak u sněhuláka Bobka: **3 hrady na výběr** (malý ⭐, střední ⭐⭐, velký ⭐⭐⭐ – obrázkem, bez čtení),
+  silnější prak (dostřelí s rezervou i na velký hrad), po zboření se sesype celý hrad
+  a objeví se velké zelené tlačítko ✔ – vrátí zpět do světa. 🏰 = jiný hrad, 🔄 = postavit znovu.
+
 ## Co umí verze 0.7.1
 
 - V rodičovské zóně malé tlačítko **🧪 Testovací režim**: skok do libovolného světa (i bez klíče),

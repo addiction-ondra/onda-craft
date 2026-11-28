@@ -256,7 +256,7 @@ export const CS = {
       hello: 'Ahoj! Já jsem Bobek. Pořád se rozpadám! Zahrajeme si s prakem? Zbouráme ledový hrad!',
       shoot: 'Zatáhni za prak a pusť!',
       hit: ['Bum!', 'Prásk!', 'Paráda!', 'Trefa!'],
-      done: 'Hurá! Hrad je zbouraný. Postavíme ho znovu?',
+      done: 'Hurá! Hrad je zbouraný! Ťukni na zelenou fajfku a jdeme zpátky.',
     },
   },
 
@@ -270,6 +270,10 @@ export const CS = {
   sling: {
     title: 'Prak',
     again: 'Postavit znovu',
+    pick: 'Vyber si hrad! Malý, střední, nebo velký?',
+    levelsTitle: 'Jiný hrad',
+    levels: ['Malý hrad', 'Střední hrad', 'Velký hrad'],
+    done: 'Hotovo',
   },
 
   worlds: {

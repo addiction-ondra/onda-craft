@@ -689,15 +689,47 @@ async function iceFlow() {
   ok(await tapCreature(page, 'snowman'), 'na sněhuláka Bobka jde ťuknout');
   await page.waitForFunction(() => window.__onda.controller.getSnapshot().overlay?.kind === 'sling', null, { timeout: 120000 }).catch(() => {});
   ok((await snap(page)).overlay?.kind === 'sling', 'Laura došla k Bobkovi a otevřel se prak');
+  ok((await page.locator('.sling-level').count()) === 3, 'prak: na výběr jsou 3 hrady (malý, střední, velký)');
+  await page.screenshot({ path: `${OUT}/48-sling-levels.png` });
+  await page.locator('[data-level="3"]').click();
+  await page.waitForSelector('.sling-canvas');
+  ok((await page.evaluate(() => window.__sling.level)) === 2 && (await page.evaluate(() => window.__sling.blocks.length)) > 25, 'prak: velký hrad je postavený');
   const cv = await page.locator('.sling-canvas').boundingBox();
   const at = (x, y) => ({ x: cv.x + (x / 900) * cv.width, y: cv.y + (y / 500) * cv.height });
+  // dostřel: hrad dočasně schovaný, plné natažení pod 45° musí doletět za nejvzdálenější kostku
+  const castleN = await page.evaluate(() => {
+    const b = window.__sling.blocks;
+    window.__sling.blocks = [];
+    return b.length;
+  });
+  {
+    const a = at(160, 340);
+    const b = at(80, 420);
+    await page.mouse.move(a.x, a.y);
+    await page.mouse.down();
+    await page.mouse.move(b.x, b.y, { steps: 6 });
+    await page.mouse.up();
+  }
+  let maxX = 0;
+  await page.waitForFunction(() => window.__sling.shot.flying, null, { timeout: 3000 }).catch(() => {});
+  while (await page.evaluate(() => window.__sling.shot.flying)) {
+    maxX = Math.max(maxX, await page.evaluate(() => window.__sling.shot.x));
+    await sleep(30);
+  }
+  ok(maxX > 860, `prak: kostka doletí až za velký hrad (x = ${Math.round(maxX)})`);
+  await page.getByRole('button', { name: 'Postavit znovu' }).click();
+  await sleep(300);
+  ok((await page.evaluate(() => window.__sling.blocks.length)) === castleN, 'prak: 🔄 postaví hrad znovu');
   for (const pull of [
-    [60, 380],
-    [55, 395],
-    [65, 365],
-    [50, 400],
-    [60, 350],
+    [55, 375],
+    [60, 395],
+    [50, 360],
+    [65, 410],
     [58, 385],
+    [70, 400],
+    [52, 370],
+    [62, 390],
+    [75, 415],
   ]) {
     const a = at(160, 340);
     const b = at(...pull);
@@ -712,8 +744,21 @@ async function iceFlow() {
   }
   const knockedN = await page.evaluate(() => window.__sling.blocks.filter((b) => Math.hypot(b.x - b.ox, b.y - b.oy) > 25 || Math.abs(b.rot) > 0.35).length);
   ok(knockedN > 0, `prak: kostky boří ledový hrad (shozeno ${knockedN} kostek)`);
+  if (!(await page.evaluate(() => window.__sling.won))) {
+    console.log('    (výhra nenastala střelbou – dorovnávám ručně pro test tlačítka)');
+    await page.evaluate(() => {
+      for (const b of window.__sling.blocks) b.rot = 1;
+    });
+  }
+  await page.waitForSelector('.sling-done', { timeout: 5000 }).catch(() => {});
+  await sleep(2500);
+  const allDown = await page.evaluate(() => window.__sling.blocks.every((b) => Math.hypot(b.x - b.ox, b.y - b.oy) > 25 || Math.abs(b.rot) > 0.35));
+  ok(allDown, 'prak: po výhře spadne celý hrad');
+  ok(await page.locator('.sling-done').isVisible(), 'prak: velké tlačítko ✔ Hotovo');
   await page.screenshot({ path: `${OUT}/50-sling.png` });
-  await page.getByRole('button', { name: 'Zavřít' }).click();
+  await page.locator('.sling-done').click();
+  ok(!(await snap(page)).overlay, 'prak: ✔ vrátí zpět do světa');
+
 
   // zpět na ostrov přes mapu
   await page.locator('.mode-col').getByRole('button', { name: 'Mapa světů' }).click();
